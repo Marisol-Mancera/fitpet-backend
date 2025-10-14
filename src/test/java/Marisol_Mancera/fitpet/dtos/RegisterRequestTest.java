@@ -34,5 +34,41 @@ class RegisterRequestTest {
         var dto = new RegisterRequest("pajaritopio@example.com", "Str0ng!Pass");
         Set<ConstraintViolation<RegisterRequest>> violations = validator.validate(dto);
         assertThat(violations, empty());
-}
+    }
+
+    @Test
+    @DisplayName("Debe fallar si la contraseña tiene menos de 8 caracteres")
+    void should_fail_when_password_too_short() {
+        var dto = new RegisterRequest("pajaritopio@example.com", "A1!");
+
+        // Act: validamos el DTO
+        var violations = validator.validate(dto);
+
+        // Assert: debe haber al menos una violación
+        assertThat(violations, not(empty()));
+
+        // (opcional) comprobamos que el mensaje contenga el texto esperado
+        var messages = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .toList();
+
+        assertThat(messages, hasItem(containsString("al menos 8 caracteres")));
+    }
+
+    @Test
+    @DisplayName("Debe fallar si la contraseña no contiene ningún dígito")
+    void should_fail_when_password_without_digit() {
+        // Arrange
+        var dto = new RegisterRequest("ok@example.com", "Strong!Pass"); // sin dígitos
+
+        // Act
+        var violations = validator.validate(dto);
+
+        // Assert
+        assertThat(violations, not(empty()));
+        var messages = violations.stream().map(ConstraintViolation::getMessage).toList();
+        assertThat(messages, hasItem(containsString("al menos un número")));
+    }
+
+    
 }

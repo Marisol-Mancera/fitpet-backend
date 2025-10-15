@@ -80,5 +80,18 @@ class RegisterRequestTest {
         assertThat(messages, hasItem(containsString("al menos un símbolo")));
     }
 
+    @Test
+    @DisplayName("Debe fallar si el email no es válido")
+    void should_fail_when_email_is_invalid() {
+        
+        var dto = new RegisterRequest("not-an-email", "Str0ng!Pass");
+
+        var violations = validator.validate(dto);
+
+        assertThat(violations, not(empty()));
+        var messages = violations.stream().map(ConstraintViolation::getMessage).toList();
+        assertThat(messages, hasItem(containsString("correo electrónico no es válido")));
+    }
+    
 
 }

@@ -68,6 +68,17 @@ class RegisterRequestTest {
         assertThat(messages, hasItem(containsString("al menos un número")));
     }
 
-  
+    @Test
+    @DisplayName("Debe fallar si la contraseña no contiene ningún símbolo")
+    void should_fail_when_password_without_symbol() {
+        var dto = new RegisterRequest("pajaritopio@example.com", "Strong0Pass");
+
+        var violations = validator.validate(dto);
+
+        assertThat(violations, not(empty()));
+        var messages = violations.stream().map(ConstraintViolation::getMessage).toList();
+        assertThat(messages, hasItem(containsString("al menos un símbolo")));
+    }
+
 
 }

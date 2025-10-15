@@ -73,5 +73,17 @@ class AuthControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
-    
+    @Test
+    @org.junit.jupiter.api.DisplayName("Debe devolver 400 cuando la contraseña no contiene símbolo")
+    @org.springframework.security.test.context.support.WithMockUser
+    void should_return_400_when_password_has_no_symbol() throws Exception {
+        var payload = java.util.Map.of("email", "owner@example.com", "password", "Strong0Pass"); // sin símbolo
+
+        mockMvc.perform(
+                post("/api/v1/auth/registro")
+                        .with(csrf())
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(payload)))
+                .andExpect(status().isBadRequest());
+    }
 }

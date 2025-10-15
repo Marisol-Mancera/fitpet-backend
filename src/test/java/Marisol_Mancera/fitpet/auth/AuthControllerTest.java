@@ -50,7 +50,7 @@ class AuthControllerTest {
     @DisplayName("Debe devolver 201 al registrar usuario en /api/v1/auth/registro")
     @WithMockUser
     void should_return_201_when_registering_user_under_property_mapped_base_path() throws Exception {
-        var payload = Map.of("email", "owner@example.com", "password", "Str0ng!Pass");
+        var payload = Map.of("email", "pajaritopio@example.com", "password", "Str0ng!Pass");
 
         mockMvc.perform(
                 post("/api/v1/auth/registro")
@@ -79,7 +79,7 @@ class AuthControllerTest {
     @DisplayName("Debe devolver 400 cuando la contraseña no contiene símbolo")
     @WithMockUser
     void should_return_400_when_password_has_no_symbol() throws Exception {
-        var payload = Map.of("email", "owner@example.com", "password", "Strong0Pass"); // sin símbolo
+        var payload = Map.of("email", "pajaritopio@example.com", "password", "Strong0Pass"); // sin símbolo
 
         mockMvc.perform(
                 post("/api/v1/auth/registro")
@@ -93,7 +93,7 @@ class AuthControllerTest {
     @DisplayName("Debe devolver 201 y un cuerpo RegisterResponse con id, email y createdAt")
     @WithMockUser
     void should_return_201_and_register_response_body() throws Exception {
-        var payload = Map.of("email", "owner@example.com", "password", "Str0ng!Pass");
+        var payload = Map.of("email", "pajaritopio@example.com", "password", "Str0ng!Pass");
 
         mockMvc.perform(
                 post("/api/v1/auth/registro")
@@ -103,7 +103,31 @@ class AuthControllerTest {
         )
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id", notNullValue()))
-        .andExpect(jsonPath("$.email", is("owner@example.com")))
+        .andExpect(jsonPath("$.email", is("pajaritopio@example.com")))
         .andExpect(jsonPath("$.createdAt", notNullValue()));
     }
+
+    @Test
+    @DisplayName("Debe devolver 409 cuando el email ya está registrado")
+    @WithMockUser
+    void should_return_409_when_email_is_already_registered() throws Exception {
+        var payload = Map.of("email", "pajaritopio@example.com", "password", "Str0ng!Pass");
+
+        // Primer registro (201)
+        mockMvc.perform(
+                post("/api/v1/auth/registro")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(payload))
+        ).andExpect(status().isCreated());
+
+        // Segundo registro con el mismo email (409)
+        mockMvc.perform(
+                post("/api/v1/auth/registro")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(payload))
+        ).andExpect(status().isConflict());
+    }
+
 }

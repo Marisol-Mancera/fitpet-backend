@@ -41,10 +41,8 @@ class RegisterRequestTest {
     void should_fail_when_password_too_short() {
         var dto = new RegisterRequest("pajaritopio@example.com", "A1!");
 
-        // Act: validamos el DTO
         var violations = validator.validate(dto);
 
-        // Assert: debe haber al menos una violación
         assertThat(violations, not(empty()));
 
         // (opcional) comprobamos que el mensaje contenga el texto esperado
@@ -59,7 +57,7 @@ class RegisterRequestTest {
     @DisplayName("Debe fallar si la contraseña no contiene ningún dígito")
     void should_fail_when_password_without_digit() {
         // Arrange
-        var dto = new RegisterRequest("ok@example.com", "Strong!Pass"); // sin dígitos
+        var dto = new RegisterRequest("pajaritopio@example.com", "Strong!Pass"); // sin dígitos
 
         // Act
         var violations = validator.validate(dto);
@@ -70,5 +68,6 @@ class RegisterRequestTest {
         assertThat(messages, hasItem(containsString("al menos un número")));
     }
 
-    
+  
+
 }

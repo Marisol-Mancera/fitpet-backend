@@ -22,6 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Map;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,16 +76,34 @@ class AuthControllerTest {
     }
 
     @Test
-    @org.junit.jupiter.api.DisplayName("Debe devolver 400 cuando la contraseña no contiene símbolo")
-    @org.springframework.security.test.context.support.WithMockUser
+    @DisplayName("Debe devolver 400 cuando la contraseña no contiene símbolo")
+    @WithMockUser
     void should_return_400_when_password_has_no_symbol() throws Exception {
-        var payload = java.util.Map.of("email", "owner@example.com", "password", "Strong0Pass"); // sin símbolo
+        var payload = Map.of("email", "owner@example.com", "password", "Strong0Pass"); // sin símbolo
 
         mockMvc.perform(
                 post("/api/v1/auth/registro")
                         .with(csrf())
-                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Debe devolver 201 y un cuerpo RegisterResponse con id, email y createdAt")
+    @WithMockUser
+    void should_return_201_and_register_response_body() throws Exception {
+        var payload = Map.of("email", "owner@example.com", "password", "Str0ng!Pass");
+
+        mockMvc.perform(
+                post("/api/v1/auth/registro")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(payload))
+        )
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", notNullValue()))
+        .andExpect(jsonPath("$.email", is("owner@example.com")))
+        .andExpect(jsonPath("$.createdAt", notNullValue()));
     }
 }

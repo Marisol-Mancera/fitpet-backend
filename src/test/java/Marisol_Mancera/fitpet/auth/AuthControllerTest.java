@@ -93,7 +93,7 @@ class AuthControllerTest {
     @DisplayName("Debe devolver 201 y un cuerpo RegisterResponse con id, email y createdAt")
     @WithMockUser
     void should_return_201_and_register_response_body() throws Exception {
-        var payload = Map.of("email", "pajaritopio@example.com", "password", "Str0ng!Pass");
+        var payload = Map.of("email", "pajaritopio2@example.com", "password", "Str0ng!Pass");
 
         mockMvc.perform(
                 post("/api/v1/auth/registro")
@@ -103,7 +103,7 @@ class AuthControllerTest {
         )
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id", notNullValue()))
-        .andExpect(jsonPath("$.email", is("pajaritopio@example.com")))
+        .andExpect(jsonPath("$.email", is("pajaritopio2@example.com")))
         .andExpect(jsonPath("$.createdAt", notNullValue()));
     }
 
@@ -111,7 +111,7 @@ class AuthControllerTest {
     @DisplayName("Debe devolver 409 cuando el email ya está registrado")
     @WithMockUser
     void should_return_409_when_email_is_already_registered() throws Exception {
-        var payload = Map.of("email", "pajaritopio@example.com", "password", "Str0ng!Pass");
+        var payload = Map.of("email", "pajaritopio1@example.com", "password", "Str0ng!Pass");
 
         // Primer registro (201)
         mockMvc.perform(

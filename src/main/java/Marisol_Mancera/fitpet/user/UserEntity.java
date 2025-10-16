@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.util.Set;
 
+import Marisol_Mancera.fitpet.role.RoleEntity;
+
 /**
  * Entidad User alineada con el ejemplo del profesor.
  * - Lombok se usa para reducir boilerplate (constructores, getters/setters, builder).

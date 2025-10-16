@@ -1,4 +1,4 @@
-package Marisol_Mancera.fitpet.user;
+package Marisol_Mancera.fitpet.role;
 
 
 import jakarta.persistence.*;

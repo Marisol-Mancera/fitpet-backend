@@ -8,6 +8,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import Marisol_Mancera.fitpet.dtos.RegisterRequest;
 import Marisol_Mancera.fitpet.dtos.RegisterResponse;
+import Marisol_Mancera.fitpet.role.RoleEntity;
+import Marisol_Mancera.fitpet.role.RoleRepository;
 import Marisol_Mancera.fitpet.user.UserEntity;
 import Marisol_Mancera.fitpet.user.UserRepository;
 
@@ -24,6 +26,9 @@ class AuthServiceTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired 
+    private RoleRepository roleRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -53,5 +58,26 @@ class AuthServiceTest {
         assertThat(saved.getUsername(), is(email));
         assertThat(saved.getPassword(), not(rawPassword));
         assertThat(passwordEncoder.matches(rawPassword, saved.getPassword()), is(true));
+    }
+
+    @Test
+    @DisplayName("Debe asignar ROLE_USER por defecto al registrar (búsqueda por nombre, no por ID)")
+    void should_assign_default_role_user_on_register() {
+        roleRepository.save(RoleEntity.builder().name("ROLE_USER").build());
+
+        String email = "owner+" + UUID.randomUUID() + "@example.com";
+        String rawPassword = "Str0ng!Pass";
+
+        authService.register(new RegisterRequest(email, rawPassword));
+
+        UserEntity saved = userRepository.findAll().stream()
+                .filter(u -> u.getUsername().equals(email))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(saved.getPassword(), not(rawPassword));
+        assertThat(passwordEncoder.matches(rawPassword, saved.getPassword()), is(true));
+        assertThat(saved.getRoles(), is(not(empty())));
+        assertThat(saved.getRoles().stream().map(r -> r.getName()).toList(), hasItem("ROLE_USER"));
     }
 }

@@ -1,11 +1,14 @@
 package Marisol_Mancera.fitpet.auth;
 
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import Marisol_Mancera.fitpet.common.error.ConflictException;
 import Marisol_Mancera.fitpet.dtos.RegisterRequest;
 import Marisol_Mancera.fitpet.dtos.RegisterResponse;
+import Marisol_Mancera.fitpet.role.RoleEntity;
+import Marisol_Mancera.fitpet.role.RoleRepository;
 import Marisol_Mancera.fitpet.user.UserEntity;
 import Marisol_Mancera.fitpet.user.UserRepository;
 
@@ -14,20 +17,24 @@ import java.util.Set;
 
 /**
  * Servicio de registro de usuarios.
- * Reglas:
- * - Si username (email) existe -> ConflictException (409).
- * - Guardar password como hash BCrypt.
- * - Devolver RegisterResponse con datos de alta.
+ * - Verifica duplicados por username (email).
+ * - Hashea la contraseña con BCrypt.
+ * - Asigna ROLE_USER buscando por nombre (evita IDs mágicos).
  */
 @Service
 public class AuthService {
 
+    private static final String DEFAULT_ROLE = "ROLE_USER";
+
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AuthService(UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+                       RoleRepository roleRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -40,10 +47,13 @@ public class AuthService {
 
         String hash = passwordEncoder.encode(request.password());
 
+        RoleEntity roleUser = roleRepository.findByName(DEFAULT_ROLE)
+                .orElseThrow(() -> new IllegalStateException("Role por defecto no configurado: " + DEFAULT_ROLE));
+
         UserEntity toSave = UserEntity.builder()
                 .username(username)
                 .password(hash)
-                .roles((Set.of())) // sin roles por ahora; se asignarán en pasos posteriores
+                .roles(Set.of(roleUser))
                 .build();
 
         UserEntity saved = userRepository.save(toSave);
@@ -51,7 +61,7 @@ public class AuthService {
         return new RegisterResponse(
                 saved.getId().toString(),
                 saved.getUsername(),
-                Instant.now() // si prefieres, puedes usar una columna created_at luego
+                Instant.now()
         );
     }
 }

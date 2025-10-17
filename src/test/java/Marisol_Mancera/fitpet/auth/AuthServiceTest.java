@@ -63,7 +63,9 @@ class AuthServiceTest {
     @Test
     @DisplayName("Debe asignar ROLE_USER por defecto al registrar (búsqueda por nombre, no por ID)")
     void should_assign_default_role_user_on_register() {
-        roleRepository.save(RoleEntity.builder().name("ROLE_USER").build());
+        // idempotente: no duplica si RoleSeeder ya creó ROLE_USER
+        roleRepository.findByName("ROLE_USER")
+                .orElseGet(() -> roleRepository.save(RoleEntity.builder().name("ROLE_USER").build()));
 
         String email = "owner+" + UUID.randomUUID() + "@example.com";
         String rawPassword = "Str0ng!Pass";

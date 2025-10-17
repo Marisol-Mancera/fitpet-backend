@@ -44,4 +44,25 @@ public class UserEntity {
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<RoleEntity> roles;
+
+    // ----------- Flags de estado de cuenta -----------
+    /** Si la cuenta no ha expirado. */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean accountNonExpired = true;
+
+    /** Si la cuenta no está bloqueada. */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean accountNonLocked = true;
+
+    /** Si las credenciales no han expirado. */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean credentialsNonExpired = true;
+
+    /** Si la cuenta está habilitada. */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean enabled = true;
 }

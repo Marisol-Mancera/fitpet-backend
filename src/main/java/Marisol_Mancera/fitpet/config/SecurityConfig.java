@@ -3,17 +3,19 @@ package Marisol_Mancera.fitpet.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-
 /**
- * Security configuration for FitPet.
- * - Keeps CSRF enabled by default.
- * - Ignores CSRF only for H2 console endpoints (/h2-console/**).
- * - Allows frames from same origin so H2 console iframe can render.
- * - Exposes /auth/** as public (registration/login) per API contract.
+ * Seguridad en modo JWT stateless.
+ * - Sin sesiones de servidor (STATELESS).
+ * - CSRF desactivado para API REST.
+ * - H2 console permitida y con frames sameOrigin.
+ * - Endpoints públicos: /auth/registro, /auth/token, H2, Swagger.
+ * - Resto autenticado mediante Bearer JWT.
  */
 @Configuration
 public class SecurityConfig {
@@ -21,27 +23,47 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Authorization rules
+            // API stateless
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .csrf(csrf -> csrf.disable())
+
+            // H2 console + swagger públicos
+            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                // Auth públicas
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/registro").permitAll()
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/token").permitAll()
+
+                // cuando emita tokens con scopes, puedo afinar por scope:
+                // .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAuthority("SCOPE_USER")
+                // .requestMatchers("/api/v1/admin/**").hasAuthority("SCOPE_ADMIN")
+
                 .anyRequest().authenticated()
             )
 
-            // CSRF: keep ON, but ignore H2 console
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**")
-            )
-
-            // Allow frames for H2 console (same origin)
-            .headers(headers -> headers
-                .frameOptions(frame -> frame.sameOrigin())
-            )
-
-            // Basic defaults for now (we’ll move to JWT later)
-            .httpBasic(Customizer.withDefaults());
+            // Resource Server JWT
+            .oauth2ResourceServer(oauth -> oauth
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+            );
 
         return http.build();
+    }
+
+    /**
+     * Convierte el claim "scope" en authorities con prefijo SCOPE_.
+     * Ej.: scope: "USER ADMIN" -> authorities: SCOPE_USER, SCOPE_ADMIN
+     */
+    @Bean
+    JwtAuthenticationConverter jwtAuthenticationConverter() {
+        var granted = new JwtGrantedAuthoritiesConverter();
+        granted.setAuthoritiesClaimName("scope");
+        granted.setAuthorityPrefix("SCOPE_");
+
+        var converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(granted);
+        return converter;
     }
 }

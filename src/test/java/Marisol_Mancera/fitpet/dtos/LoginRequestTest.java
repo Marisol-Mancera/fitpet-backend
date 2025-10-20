@@ -35,5 +35,15 @@ class LoginRequestTest {
         assertThat(violations, empty());
     }
 
-    
+    @Test
+    @DisplayName("Debe rechazar email inválido")
+    void should_reject_invalid_email() {
+        var dto = new LoginRequest("not-an-email", "pass");
+        Set<ConstraintViolation<LoginRequest>> violations = validator.validate(dto);
+
+        assertThat(violations, not(empty()));
+        assertThat(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("email")), is(true));
+    }
+
+   
 }

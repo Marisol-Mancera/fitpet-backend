@@ -36,7 +36,7 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
 
-    // Relación ManyToMany con roles, fetch eager (igual que en el ejemplo del profe)
+    // Relación ManyToMany con roles, fetch eager 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "roles_users",

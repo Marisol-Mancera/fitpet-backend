@@ -44,5 +44,7 @@ class SecurityUserTest {
         assertThat(securityUser.isCredentialsNonExpired(), is(true));
         assertThat(securityUser.isEnabled(), is(true));
     }
+
+    
 }
 

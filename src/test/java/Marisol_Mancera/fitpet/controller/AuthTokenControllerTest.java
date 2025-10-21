@@ -98,22 +98,20 @@ class AuthTokenControllerTest {
     }
 
     @Test
-@DisplayName("401 cuando password es inválida: devuelve JSON de error consistente")
-void should_return_401_when_password_is_invalid() throws Exception {
-    var body = Map.of(
-            "email", "pajaritopio@example.com",
-            "password", "Wrong!Pass"
-    );
+    @DisplayName("401 cuando password es inválida: devuelve JSON de error consistente")
+    void should_return_401_when_password_is_invalid() throws Exception {
+        var body = Map.of(
+                "email", "pajaritopio@example.com",
+                "password", "Wrong!Pass");
 
-    mockMvc.perform(post("/api/v1/auth/token")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(mapper.writeValueAsString(body)))
-            .andExpect(status().isUnauthorized())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(jsonPath("$.status").value(401))
-            .andExpect(jsonPath("$.error").value("Unauthorized"))
-            .andExpect(jsonPath("$.message").value("Invalid credentials"))
-            .andExpect(jsonPath("$.path").value("/api/v1/auth/token"));
-}
+        mockMvc.perform(post("/api/v1/auth/token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(body)))
+                .andExpect(status().isUnauthorized()) 
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED")) 
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+
+    }
 
 }

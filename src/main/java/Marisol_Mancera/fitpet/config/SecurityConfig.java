@@ -26,6 +26,7 @@ public class SecurityConfig {
             // API stateless
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .csrf(csrf -> csrf.disable())
+            
 
             // H2 console + swagger públicos
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
@@ -38,8 +39,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/token").permitAll()
 
                 // cuando emita tokens con scopes, puedo afinar por scope:
-                // .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAuthority("SCOPE_USER")
-                // .requestMatchers("/api/v1/admin/**").hasAuthority("SCOPE_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAuthority("SCOPE_USER")
+                .requestMatchers("/api/v1/admin/**").hasAuthority("SCOPE_ADMIN")
 
                 .anyRequest().authenticated()
             )

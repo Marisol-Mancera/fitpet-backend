@@ -17,7 +17,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
+     @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    public ResponseEntity<Problem> handleBadCredentials(org.springframework.security.authentication.BadCredentialsException ex) {
+        // Mensaje controlado (no exponer detalles de seguridad)
+        var body = new Problem("UNAUTHORIZED", "Invalid credentials");
+        return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).body(body);
+    }
+
     /** Estructura mínima y estable de error para la API. */
     public record Problem(String code, String message) {
     }
+
 }

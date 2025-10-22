@@ -108,10 +108,22 @@ class RegisterRequestTest {
     @Test
     @DisplayName("Debe rechazar contraseña sin ningún dígito")
     void should_reject_password_without_any_digit() {
-        var dto = new RegisterRequest("pajaritopio@example.com", "Abc!defg"); // 8 chars, sin dígitos
+        var dto = new RegisterRequest("pajaritopio@example.com", "Abc!defg");
         var violations = validator.validate(dto);
 
         // Debe haber al menos una violación y ser sobre el campo "password"
+        assertThat(violations, is(not(empty())));
+        boolean hasPasswordViolation = violations.stream()
+                .anyMatch(v -> "password".equals(v.getPropertyPath().toString()));
+        assertThat(hasPasswordViolation, is(true));
+    }
+
+    @Test
+    @DisplayName("Debe rechazar contraseña sin ningún simbolo")
+    void should_reject_password_without_any_symbol() {
+        var dto = new RegisterRequest("pajaritopio@example.com", "Abc1defg");
+        var violations = validator.validate(dto);
+
         assertThat(violations, is(not(empty())));
         boolean hasPasswordViolation = violations.stream()
                 .anyMatch(v -> "password".equals(v.getPropertyPath().toString()));

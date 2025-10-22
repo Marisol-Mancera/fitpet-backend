@@ -1,9 +1,9 @@
-package Marisol_Mancera.fitpet.dtos;
+package Marisol_Mancera.fitpet.auth;
 
 import java.time.Instant;
 
 //outband para registro satisactorio
-public record RegisterResponse(
+public record AuthDTOResponse(
         String id,
         String email,
         Instant createdAt

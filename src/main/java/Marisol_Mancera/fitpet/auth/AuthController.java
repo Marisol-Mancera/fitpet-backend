@@ -5,7 +5,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import Marisol_Mancera.fitpet.dtos.RegisterRequest;
-import Marisol_Mancera.fitpet.dtos.RegisterResponse;
 import jakarta.validation.Valid;
 
 
@@ -26,8 +25,8 @@ public class AuthController {
     }
 
     @PostMapping("/registro")
-    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        RegisterResponse response = authService.register(request);
+    public ResponseEntity<AuthDTOResponse> register(@Valid @RequestBody RegisterRequest request) {
+        AuthDTOResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

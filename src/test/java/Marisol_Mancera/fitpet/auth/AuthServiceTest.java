@@ -7,7 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import Marisol_Mancera.fitpet.dtos.RegisterRequest;
-import Marisol_Mancera.fitpet.dtos.RegisterResponse;
 import Marisol_Mancera.fitpet.role.RoleEntity;
 import Marisol_Mancera.fitpet.role.RoleRepository;
 import Marisol_Mancera.fitpet.user.UserEntity;
@@ -40,7 +39,7 @@ class AuthServiceTest {
         String email = "pajaritopio" + UUID.randomUUID() + "@example.com";
         String rawPassword = "Str0ng!Pass";
 
-        RegisterResponse res = authService.register(new RegisterRequest(email, rawPassword));
+        AuthDTOResponse res = authService.register(new RegisterRequest(email, rawPassword));
 
         // respuesta
         assertThat(res, notNullValue());

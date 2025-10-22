@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 
 import Marisol_Mancera.fitpet.common.error.ConflictException;
 import Marisol_Mancera.fitpet.dtos.RegisterRequest;
-import Marisol_Mancera.fitpet.dtos.RegisterResponse;
 import Marisol_Mancera.fitpet.role.RoleEntity;
 import Marisol_Mancera.fitpet.role.RoleRepository;
 import Marisol_Mancera.fitpet.user.UserEntity;
@@ -38,7 +37,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public RegisterResponse register(RegisterRequest request) {
+    public AuthDTOResponse register(RegisterRequest request) {
         String username = request.email();
 
         if (userRepository.existsByUsername(username)) {
@@ -58,7 +57,7 @@ public class AuthService {
 
         UserEntity saved = userRepository.save(toSave);
 
-        return new RegisterResponse(
+        return new AuthDTOResponse(
                 saved.getId().toString(),
                 saved.getUsername(),
                 Instant.now()

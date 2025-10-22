@@ -28,6 +28,8 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import static org.hamcrest.Matchers.*;
+
 /**
  * Caso feliz: credenciales válidas -> 201 + JSON con accessToken Bearer.
  * Base path usa 'api-endpoint=api' => /api/auth/token
@@ -119,13 +121,63 @@ class AuthTokenControllerTest {
         void should_return_400_when_register_payload_is_invalid() throws Exception {
                 var body = Map.of(
                                 "email", "pajaritopio@example.com",
-                                "password", "Abcdef12" 
+                                "password", "Abcdef12");
+
+                mockMvc.perform(post("/api/v1/auth/registro")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(mapper.writeValueAsString(body)))
+                                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("400 cuando el payload es inválido (sin símbolo en password) devuelve Problem")
+        void should_return_400_problem_when_register_payload_is_invalid() throws Exception {
+                var body = java.util.Map.of(
+                                "email", "pajaritopio@example.com",
+                                "password", "Abcdef12");
+
+                mockMvc.perform(post("/api/v1/auth/registro")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(mapper.writeValueAsString(body)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                                .andExpect(jsonPath("$.message", not(emptyOrNullString())));
+        }
+
+        @Test
+        @DisplayName("201 registro válido: devuelve AuthDTOResponse y persiste usuario con ROLE_USER")
+        void should_return_201_and_persist_user_with_role_user() throws Exception {
+                var email = "pajaritopi0@example.com";
+                var body = Map.of(
+                                "email", email,
+                                "password", "Str0ng!Pass" // >=8, con dígito y símbolo
                 );
 
                 mockMvc.perform(post("/api/v1/auth/registro")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(mapper.writeValueAsString(body)))
-                                .andExpect(status().isBadRequest()); 
+                                .andExpect(status().isCreated())
+                                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(jsonPath("$.id").value("Registered"))
+                                .andExpect(jsonPath("$.email").value(email))
+                                .andExpect(jsonPath("$.token").doesNotExist()); 
+                                                
+
+                // Verificaciones en BD
+                var savedOpt = userRepository.findByUsername(email);
+                assertThat("El usuario debe existir tras el registro", savedOpt.isPresent(), is(true));
+
+                UserEntity saved = savedOpt.get();
+                assertThat("La contraseña NO debe guardarse en claro",
+                                saved.getPassword(), not(equalTo("Str0ng!Pass")));
+                assertThat("El encoder debe validar la contraseña codificada",
+                                passwordEncoder.matches("Str0ng!Pass", saved.getPassword()), is(true));
+
+                var roles = saved.getRoles();
+                assertThat("El usuario debe tener ROLE_USER", roles, is(not(empty())));
+                boolean hasRoleUser = roles.stream().map(r -> r.getName()).anyMatch("ROLE_USER"::equals);
+                assertThat(hasRoleUser, is(true));
         }
 
 }

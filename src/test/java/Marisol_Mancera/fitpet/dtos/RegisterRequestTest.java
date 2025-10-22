@@ -96,9 +96,22 @@ class RegisterRequestTest {
     @Test
     @DisplayName("Debe rechazar contraseña con menos de 8 caracteres")
     void should_reject_password_shorter_than_8_characters() {
-        var dto = new RegisterRequest("pajaritopio@example.com", "Abc!12"); 
+        var dto = new RegisterRequest("pajaritopio@example.com", "Abc!12");
         Set<ConstraintViolation<RegisterRequest>> violations = validator.validate(dto);
 
+        assertThat(violations, is(not(empty())));
+        boolean hasPasswordViolation = violations.stream()
+                .anyMatch(v -> "password".equals(v.getPropertyPath().toString()));
+        assertThat(hasPasswordViolation, is(true));
+    }
+
+    @Test
+    @DisplayName("Debe rechazar contraseña sin ningún dígito")
+    void should_reject_password_without_any_digit() {
+        var dto = new RegisterRequest("pajaritopio@example.com", "Abc!defg"); // 8 chars, sin dígitos
+        var violations = validator.validate(dto);
+
+        // Debe haber al menos una violación y ser sobre el campo "password"
         assertThat(violations, is(not(empty())));
         boolean hasPasswordViolation = violations.stream()
                 .anyMatch(v -> "password".equals(v.getPropertyPath().toString()));

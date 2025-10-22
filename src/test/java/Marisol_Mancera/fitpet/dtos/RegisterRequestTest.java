@@ -83,7 +83,7 @@ class RegisterRequestTest {
     @Test
     @DisplayName("Debe fallar si el email no es válido")
     void should_fail_when_email_is_invalid() {
-        
+
         var dto = new RegisterRequest("not-an-email", "Str0ng!Pass");
 
         var violations = validator.validate(dto);
@@ -92,6 +92,17 @@ class RegisterRequestTest {
         var messages = violations.stream().map(ConstraintViolation::getMessage).toList();
         assertThat(messages, hasItem(containsString("correo electrónico no es válido")));
     }
-    
+
+    @Test
+    @DisplayName("Debe rechazar contraseña con menos de 8 caracteres")
+    void should_reject_password_shorter_than_8_characters() {
+        var dto = new RegisterRequest("pajaritopio@example.com", "Abc!12"); 
+        Set<ConstraintViolation<RegisterRequest>> violations = validator.validate(dto);
+
+        assertThat(violations, is(not(empty())));
+        boolean hasPasswordViolation = violations.stream()
+                .anyMatch(v -> "password".equals(v.getPropertyPath().toString()));
+        assertThat(hasPasswordViolation, is(true));
+    }
 
 }

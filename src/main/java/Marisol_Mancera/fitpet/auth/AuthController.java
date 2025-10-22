@@ -1,10 +1,9 @@
-package Marisol_Mancera.fitpet.controller;
+package Marisol_Mancera.fitpet.auth;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import Marisol_Mancera.fitpet.auth.AuthService;
 import Marisol_Mancera.fitpet.dtos.RegisterRequest;
 import Marisol_Mancera.fitpet.dtos.RegisterResponse;
 import jakarta.validation.Valid;

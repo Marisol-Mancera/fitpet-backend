@@ -1,4 +1,4 @@
-package Marisol_Mancera.fitpet.controller;
+package Marisol_Mancera.fitpet.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

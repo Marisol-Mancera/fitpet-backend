@@ -1,5 +1,11 @@
 package Marisol_Mancera.fitpet.user;
 
+import java.util.Set;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,11 +13,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import Marisol_Mancera.fitpet.role.RoleEntity;
-
-import java.util.Set;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 
 @DataJpaTest
 class UserEntityTest {
@@ -28,7 +29,7 @@ class UserEntityTest {
 
         UserEntity user = new UserEntity();
         user.setUsername("pajaritopio@example.com");  
-        user.setPassword("$2a$10$bcrypt_hash");    // hash BCrypt
+        user.setPassword("$2a$10$bcrypt_hash");    
         user.setRoles(Set.of(roleUser));
 
         // Act

@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -81,6 +83,11 @@ class AuthTokenControllerTest {
         });
     }
 
+    /**
+     ********************************************
+     * Tests para el endpoint /api/v1/auth/token*
+     ********************************************
+     **/
     @Test
     @DisplayName("201 cuando credenciales son válidas: devuelve Bearer accessToken")
     void should_return_201_and_bearer_token_on_valid_credentials() throws Exception {
@@ -118,6 +125,11 @@ class AuthTokenControllerTest {
 
     }
 
+    /**
+     ***********************************************
+     * Tests para el endpoint /api/v1/auth/registro*
+     ***********************************************
+     **/
     @Test
     @DisplayName("400 cuando el payload de registro no cumple validaciones (sin símbolo)")
     void should_return_400_when_register_payload_is_invalid() throws Exception {
@@ -138,7 +150,7 @@ class AuthTokenControllerTest {
         var email = "pajaritopi0@example.com";
         var body = Map.of(
                 "email", email,
-                "password", "Str0ng!Pass" 
+                "password", "Str0ng!Pass"
         );
 
         mockMvc.perform(post("/api/v1/auth/registro")
@@ -164,6 +176,29 @@ class AuthTokenControllerTest {
         assertThat("El usuario debe tener ROLE_USER", roles, is(not(empty())));
         boolean hasRoleUser = roles.stream().map(r -> r.getName()).anyMatch("ROLE_USER"::equals);
         assertThat(hasRoleUser, is(true));
+    }
+
+    /**
+     ********************************************
+     * Tests para el endpoint /api/v1/auth/login*
+     ********************************************
+     **/
+    @Test
+    @DisplayName("400 login: email con espacios internos → BAD_REQUEST con mensaje claro")
+    @WithAnonymousUser
+    void should_return_400_when_login_email_contains_internal_spaces() throws Exception {
+        
+        String body = """
+        {"email":"pajarito pio@example.com","password":"Str0ng!Pass"}
+        """;
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Email must not contain spaces"));
     }
 
 }

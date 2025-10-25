@@ -39,6 +39,7 @@ public class SecurityConfig {
                 // Auth públicas
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/registro").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/token").permitAll()
+                .requestMatchers("/api/v1/auth/login").permitAll()
                 // cuando emitas tokens con scopes, puedes afinar por scope:
                 // .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAuthority("SCOPE_USER")
                 // .requestMatchers("/api/v1/admin/**").hasAuthority("SCOPE_ADMIN")

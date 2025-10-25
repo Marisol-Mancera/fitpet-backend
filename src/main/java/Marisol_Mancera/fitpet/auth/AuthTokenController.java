@@ -1,9 +1,16 @@
 package Marisol_Mancera.fitpet.auth;
 
+import java.time.Duration;
+import java.util.Locale;
+import java.util.Set;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import Marisol_Mancera.fitpet.common.error.ConflictException;
 import Marisol_Mancera.fitpet.dtos.LoginRequest;
@@ -16,14 +23,9 @@ import Marisol_Mancera.fitpet.user.UserEntity;
 import Marisol_Mancera.fitpet.user.UserRepository;
 import jakarta.validation.Valid;
 
-import java.time.Duration;
-import java.util.Locale;
-import java.util.Set;
-
 //  Controlador de autenticación para emitir JWT (HS512).
 //  Ruta: POST /api/auth/token  (api-endpoint = 'api')
 //  Seguridad: endpoint público (permitAll) configurado en SecurityConfig.
-
 @RestController
 @RequestMapping(path = "/${api-endpoint}/v1/auth")
 public class AuthTokenController {
@@ -34,19 +36,21 @@ public class AuthTokenController {
     private final PasswordEncoder passwordEncoder;
 
     public AuthTokenController(JwtTokenService jwtTokenService,
-                               UserRepository userRepository,
-                               RoleRepository roleRepository,
-                               PasswordEncoder passwordEncoder) {
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder) {
         this.jwtTokenService = jwtTokenService;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;}
+        this.passwordEncoder = passwordEncoder;
+    }
+
     /**
-     * Emite un JWT si las credenciales son válidas.
-     * - Normaliza el email (trim + lowercase) para evitar fallos de coincidencia.
-     * - Responde 201 con { tokenType, expiresIn, accessToken }.
-     * - Si las credenciales son inválidas, el servicio lanza
-     * BadCredentialsException (mapeada a 401 por el handler global).
+     * Emite un JWT si las credenciales son válidas. - Normaliza el email (trim
+     * + lowercase) para evitar fallos de coincidencia. - Responde 201 con {
+     * tokenType, expiresIn, accessToken }. - Si las credenciales son inválidas,
+     * el servicio lanza BadCredentialsException (mapeada a 401 por el handler
+     * global).
      */
     @PostMapping("/token")
     public ResponseEntity<TokenResponse> token(@RequestBody LoginRequest request) {
@@ -84,5 +88,13 @@ public class AuthTokenController {
         userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new AuthDTOResponse("Registered", email, null));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
+        final String email = request.normalizedEmail();                  
+
+        // la lógica completa de autenticación (lookup, matches, 401 y token) va en el siguiente micro-paso.
+        return ResponseEntity.ok(new AuthDTOResponse("Authenticated", email, null));    
     }
 }

@@ -1,13 +1,15 @@
 package Marisol_Mancera.fitpet.pet;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesPattern;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test; 
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,12 +33,12 @@ import Marisol_Mancera.fitpet.user.UserRepository;
 @AutoConfigureMockMvc
 class PetControllerTest {
 
-    @Autowired JwtEncoder 
-    jwtEncoder;
-    @Autowired UserRepository 
-    userRepository;
-    @Autowired MockMvc 
-    mockMvc;
+    @Autowired
+    JwtEncoder jwtEncoder;
+    @Autowired
+    UserRepository userRepository;
+    @Autowired
+    MockMvc mockMvc;
 
     private String bearerFor(String username) {
         var now = Instant.now();
@@ -73,7 +75,7 @@ class PetControllerTest {
           "birthDate": "%s",
           "weightKg": 12.4
         }
-        """.formatted(java.time.LocalDate.now().minusYears(3));
+        """.formatted(LocalDate.now().minusYears(3));
 
         var result = mockMvc.perform(post("/api/v1/pets")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -99,7 +101,7 @@ class PetControllerTest {
         var owner = UserEntity.builder()
                 .username("pajaritopi0@example.com")
                 .password("any")
-                .roles(java.util.Collections.emptySet())
+                .roles(Collections.emptySet())
                 .build();
         userRepository.save(owner);
 
@@ -114,7 +116,7 @@ class PetControllerTest {
           "birthDate": "%s",
           "weightKg": 12.4
         }
-        """.formatted(java.time.LocalDate.now().minusYears(3));
+        """.formatted(LocalDate.now().minusYears(3));
 
         mockMvc.perform(post("/api/v1/pets")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -125,4 +127,71 @@ class PetControllerTest {
                 .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
                 .andExpect(jsonPath("$.message", containsString("must not be blank")));
     }
+
+    @Test
+    @DisplayName("400 crear mascota: BAD_REQUEST cuando la fecha de nacimiento no es pasada")
+    void should_return_400_when_birth_date_is_not_past() throws Exception {
+        var owner = UserEntity.builder()
+                .username("losgatosdekaren@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+
+        String bearer = bearerFor(owner.getUsername());
+
+        String invalidJson = """
+    {
+      "name": "Pony",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 12.4
+    }
+    """.formatted(LocalDate.now().plusDays(1)); // fecha futura → inválida
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(invalidJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message", containsString("must be a past")));
+    }
+
+    @Test
+    @DisplayName("400 crear mascota: BAD_REQUEST cuando el peso no es positivo")
+    void should_return_400_when_weight_is_not_positive() throws Exception {
+        var owner = UserEntity.builder()
+                .username("doggylove@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+
+        String bearer = bearerFor(owner.getUsername());
+
+        String invalidJson = """
+    {
+      "name": "Pony",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": -2.5
+    }
+    """.formatted(LocalDate.now().minusYears(3));
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(invalidJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message", containsString("must be greater than 0")));
+    }
+
 }

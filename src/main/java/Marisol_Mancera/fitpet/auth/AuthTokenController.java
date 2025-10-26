@@ -34,15 +34,19 @@ public class AuthTokenController {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
-    public AuthTokenController(JwtTokenService jwtTokenService,
+    public AuthTokenController(
+            JwtTokenService jwtTokenService,
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AuthService authService) {
         this.jwtTokenService = jwtTokenService;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authService = authService;
     }
 
     /**
@@ -91,10 +95,9 @@ public class AuthTokenController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
-        final String email = request.normalizedEmail();                  
-
-        // la lógica completa de autenticación (lookup, matches, 401 y token) va en el siguiente micro-paso.
-        return ResponseEntity.ok(new AuthDTOResponse("Authenticated", email, null));    
-    }
+public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
+    // CHANGE: delegar autenticación al servicio para cumplir SRP y permitir 401 centralizado
+    AuthDTOResponse response = authService.authenticate(request); // delega en AuthService
+    return ResponseEntity.ok(response);                         
+}
 }

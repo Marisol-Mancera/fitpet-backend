@@ -86,8 +86,9 @@ class AuthTokenControllerTest {
     /**
      ********************************************
      * Tests para el endpoint /api/v1/auth/token*
-     ********************************************
-     **/
+     * *******************************************
+     *
+     */
     @Test
     @DisplayName("201 cuando credenciales son válidas: devuelve Bearer accessToken")
     void should_return_201_and_bearer_token_on_valid_credentials() throws Exception {
@@ -128,8 +129,9 @@ class AuthTokenControllerTest {
     /**
      ***********************************************
      * Tests para el endpoint /api/v1/auth/registro*
-     ***********************************************
-     **/
+     * **********************************************
+     *
+     */
     @Test
     @DisplayName("400 cuando el payload de registro no cumple validaciones (sin símbolo)")
     void should_return_400_when_register_payload_is_invalid() throws Exception {
@@ -181,13 +183,14 @@ class AuthTokenControllerTest {
     /**
      ********************************************
      * Tests para el endpoint /api/v1/auth/login*
-     ********************************************
-     **/
+     * *******************************************
+     *
+     */
     @Test
     @DisplayName("400 login: email con espacios internos → BAD_REQUEST con mensaje claro")
     @WithAnonymousUser
     void should_return_400_when_login_email_contains_internal_spaces() throws Exception {
-        
+
         String body = """
         {"email":"pajarito pio@example.com","password":"Str0ng!Pass"}
         """;
@@ -199,6 +202,31 @@ class AuthTokenControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
                 .andExpect(jsonPath("$.message").value("Email must not contain spaces"));
+    }
+
+    @Test
+    @DisplayName("401 login: credenciales inválidas (password case mismatch) → UNAUTHORIZED")
+    @WithAnonymousUser
+    void should_return_401_when_login_password_case_is_wrong() throws Exception {
+
+        var user = UserEntity.builder()
+                .username("pajaritopi0@example.com")
+                .password(passwordEncoder.encode("Str0ng!Pass"))
+                .roles(Set.of()) 
+                .build();
+        userRepository.save(user);
+
+        String body = """
+    {"email":"pajaritopi0@example.com","password":"str0ng!pass"}
+    """;
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
     }
 
 }

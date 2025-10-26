@@ -266,4 +266,23 @@ class AuthTokenControllerTest {
                 .andExpect(jsonPath("$.token").doesNotExist());
     }
 
+    @Test
+    @DisplayName("401 login: email no registrado → UNAUTHORIZED con Problem Object")
+    @WithAnonymousUser
+    void should_return_401_when_login_email_does_not_exist() throws Exception {
+        // email que NO existe en la BD
+        String body = """
+    {"email":"elgatodekaren@example.com","password":"Str0ng!Pass"}
+    """.formatted(System.nanoTime()); // email único para evitar colisiones
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/auth/login")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+    }
+
 }

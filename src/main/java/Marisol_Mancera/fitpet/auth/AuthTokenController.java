@@ -22,12 +22,14 @@ import Marisol_Mancera.fitpet.security.JwtTokenService;
 import Marisol_Mancera.fitpet.user.UserEntity;
 import Marisol_Mancera.fitpet.user.UserRepository;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 //  Controlador de autenticación para emitir JWT (HS512).
 //  Ruta: POST /api/auth/token  (api-endpoint = 'api')
 //  Seguridad: endpoint público (permitAll) configurado en SecurityConfig.
 @RestController
 @RequestMapping(path = "/${api-endpoint}/v1/auth")
+@RequiredArgsConstructor
 public class AuthTokenController {
 
     private final JwtTokenService jwtTokenService;
@@ -36,18 +38,6 @@ public class AuthTokenController {
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
 
-    public AuthTokenController(
-            JwtTokenService jwtTokenService,
-            UserRepository userRepository,
-            RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder,
-            AuthService authService) {
-        this.jwtTokenService = jwtTokenService;
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.authService = authService;
-    }
 
     /**
      * Emite un JWT si las credenciales son válidas. - Normaliza el email (trim

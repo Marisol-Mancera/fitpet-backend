@@ -3,7 +3,8 @@ package Marisol_Mancera.fitpet.common.error;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
  * Manejo global de errores HTTP.
@@ -33,13 +34,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Problem> handleValidation(MethodArgumentNotValidException ex) {
        
-        String message = ex.getBindingResult().getAllErrors().stream()
-                .findFirst()
-                .map(err -> err.getDefaultMessage())
-                .orElse("Validation failed");
+      var binding = ex.getBindingResult();
+    var fieldErrors = binding.getFieldErrors();
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new Problem("BAD_REQUEST", message));
-    }
+    //1) si hay violaciones de @Pattern (espacios), priorizarlas
+    String message = fieldErrors.stream()
+            .filter(fe -> "Pattern".equals(fe.getCode())) // prioriza reglas de 'sin espacios'
+            .map(fe -> fe.getDefaultMessage()) //fe --> abreviatura de FieldError
+            .filter(msg -> msg != null && !msg.isBlank())
+            .findFirst()
+            // 2) si no hay Pattern, usa el primer mensaje disponible (Email, NotBlank, etc.)
+            .orElseGet(() -> fieldErrors.stream()
+                    .map(fe -> fe.getDefaultMessage())
+                    .filter(msg -> msg != null && !msg.isBlank())
+                    .findFirst()
+                    .orElse("Validation failed"));
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(new Problem("BAD_REQUEST", message));
+}
 
 }

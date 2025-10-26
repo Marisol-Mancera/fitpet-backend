@@ -64,8 +64,7 @@ class AuthTokenControllerTest {
         var roleUser = roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> roleRepository.save(RoleEntity.builder().name("ROLE_USER").build()));
 
-        // Usuario fijo para los tests (norma: pajaritopio@example.com) con credenciales
-        // deterministas
+        // Asegurar usuario de prueba (idempotente)
         var email = "pajaritopio@example.com";
         var encoded = passwordEncoder.encode("Str0ng!Pass");
 
@@ -81,6 +80,11 @@ class AuthTokenControllerTest {
                     .roles(Set.of(roleUser))
                     .build());
         });
+    }
+
+    @BeforeEach //garantiza base de datos limpia al iniciar cada test
+    void cleanupDatabase() {
+        userRepository.deleteAllInBatch(); //más rápido y evita cascadas parciales
     }
 
     /**
@@ -212,7 +216,7 @@ class AuthTokenControllerTest {
         var user = UserEntity.builder()
                 .username("pajaritopi0@example.com")
                 .password(passwordEncoder.encode("Str0ng!Pass"))
-                .roles(Set.of()) 
+                .roles(Set.of())
                 .build();
         userRepository.save(user);
 
@@ -227,6 +231,39 @@ class AuthTokenControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
                 .andExpect(jsonPath("$.message").value("Invalid credentials"));
+    }
+
+    @Test
+    @DisplayName("200 login: credenciales válidas → devuelve AuthDTOResponse con email normalizado")
+    @WithAnonymousUser
+    void should_return_200_and_authdtoresponse_when_credentials_are_valid() throws Exception {
+        // Arrange
+        final String email = "pajaritologin@example.com";
+        final String password = "Str0ng!Pass";
+
+        RoleEntity roleUser = roleRepository.findByName("ROLE_USER")
+                .orElseGet(() -> roleRepository.save(new RoleEntity(null, "ROLE_USER")));
+
+        UserEntity user = UserEntity.builder()
+                .username(email)
+                .password(passwordEncoder.encode(password))
+                .roles(Set.of(roleUser))
+                .build();
+        userRepository.save(user);
+
+        // Construir payload con credenciales válidas
+        String body = """
+    {"email":"%s","password":"%s"}
+    """.formatted(email, password);
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.token").doesNotExist());
     }
 
 }

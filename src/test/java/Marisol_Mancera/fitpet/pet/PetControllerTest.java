@@ -194,4 +194,29 @@ class PetControllerTest {
                 .andExpect(jsonPath("$.message", containsString("must be greater than 0")));
     }
 
+    @Test
+    @DisplayName("401 crear mascota: UNAUTHORIZED cuando no hay token Bearer")
+    void should_return_401_when_no_bearer_token() throws Exception {
+        // Arrange: payload completamente válido (el fallo debe ser SOLO la falta de autenticación,
+        //tpico caso cuando pasa mucho tiempo desde la autenticación)
+        String validJson = """
+    {
+      "name": "Pony",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 12.4
+    }
+    """.formatted(LocalDate.now().minusYears(3));
+
+        // Act & Assert: llamada SIN cabecera Authorization
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validJson))
+                .andExpect(status().isUnauthorized())
+                // El Resource Server expone este header con el esquema requerido
+                .andExpect(header().string("WWW-Authenticate", containsString("Bearer")));
+    }
+
 }

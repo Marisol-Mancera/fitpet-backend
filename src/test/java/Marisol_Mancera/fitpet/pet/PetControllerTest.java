@@ -464,4 +464,103 @@ class PetControllerTest {
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
+    @Test
+    @DisplayName("200 listar mascotas: devuelve array con campos mínimos")
+    void should_return_list_with_minimal_schema_fields() throws Exception {
+        //dueño con 1 mascota para validar el esquema
+        var owner = UserEntity.builder()
+                .username("lasmascotasdelkarenmacho@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+        String bearer = bearerFor(owner.getUsername());
+
+        String petJson = """
+    {
+      "name": "PonySchema",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 9.9
+    }
+    """.formatted(LocalDate.now().minusYears(2));
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(petJson))
+                .andExpect(status().isCreated());
+
+        //GET debe devolver 1 elemento con los campos mínimos
+        mockMvc.perform(get("/api/v1/pets")
+                .header("Authorization", bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").isNumber())
+                .andExpect(jsonPath("$[0].ownerId").value(owner.getId()))
+                .andExpect(jsonPath("$[0].name").value("PonySchema"))
+                .andExpect(jsonPath("$[0].species").value("Dog"))
+                .andExpect(jsonPath("$[0].breed").value("Beagle"))
+                .andExpect(jsonPath("$[0].sex").value("Female"))
+                .andExpect(jsonPath("$[0].birthDate").exists())
+                .andExpect(jsonPath("$[0].weightKg").value(9.9));
+    }
+
+    @Test
+    @DisplayName("200 listar mascotas: devuelve todas las mascotas del dueño (2 elementos)")
+    void should_return_two_pets_for_owner() throws Exception {
+        // dueño con 2 mascotas
+        var owner = UserEntity.builder()
+                .username("elkaren+2@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+        String bearer = bearerFor(owner.getUsername());
+
+        String pet1 = """
+    {
+      "name": "Luna",
+      "species": "cat",
+      "breed": "siames",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 5.5
+    }
+    """.formatted(LocalDate.now().minusYears(4));
+
+        String pet2 = """
+    {
+      "name": "Max",
+      "species": "Dog",
+      "breed": "Labrador",
+      "sex": "Male",
+      "birthDate": "%s",
+      "weightKg": 28.0
+    }
+    """.formatted(LocalDate.now().minusYears(5));
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(pet1))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(pet2))
+                .andExpect(status().isCreated());
+
+        // GET debe traer las 2 mascotas del dueño
+        mockMvc.perform(get("/api/v1/pets")
+                .header("Authorization", bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].ownerId").value(owner.getId()))
+                .andExpect(jsonPath("$[1].ownerId").value(owner.getId()));
+    }
+
 }

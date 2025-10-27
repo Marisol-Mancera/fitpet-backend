@@ -8,6 +8,7 @@ import java.util.Collections;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.blankOrNullString;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -368,6 +370,71 @@ class PetControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(org.springframework.http.MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
                 .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("must not be blank")));
+    }
+
+    @Test
+    @DisplayName("200 listar mascotas: devuelve solo las del dueño autenticado")
+    void should_return_only_authenticated_owner_pets() throws Exception {
+        var ownerA = UserEntity.builder()
+                .username("lakarenmola@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        var ownerB = UserEntity.builder()
+                .username("elkarenmacho@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(ownerA);
+        userRepository.save(ownerB);
+
+        String bearerA = bearerFor(ownerA.getUsername());
+        String bearerB = bearerFor(ownerB.getUsername());
+
+        String petAJson = """
+    {
+      "name": "PonyA",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 10.0
+    }
+    """.formatted(LocalDate.now().minusYears(2));
+
+        String petBJson = """
+    {
+      "name": "CattyB",
+      "species": "Cat",
+      "breed": "Siamese",
+      "sex": "Male",
+      "birthDate": "%s",
+      "weightKg": 4.2
+    }
+    """.formatted(LocalDate.now().minusYears(1));
+
+        // Creamos una mascota para cada usuario vía POST
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearerA)
+                .content(petAJson))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearerB)
+                .content(petBJson))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/pets")
+                .header("Authorization", bearerA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name").value("PonyA"))
+                .andExpect(jsonPath("$[0].species").value("Dog"))
+                .andExpect(jsonPath("$[0].breed").value("Beagle"))
+                .andExpect(jsonPath("$[0].sex").value("Female"))
+                .andExpect(jsonPath("$[0].ownerId").value(ownerA.getId()));
     }
 
 }

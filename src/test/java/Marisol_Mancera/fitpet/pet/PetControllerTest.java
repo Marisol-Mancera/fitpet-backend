@@ -308,7 +308,7 @@ class PetControllerTest {
     @DisplayName("400 crear mascota: BAD_REQUEST cuando la raza está en blanco")
     void should_return_400_when_breed_is_blank() throws Exception {
         var owner = UserEntity.builder()
-                .username("pajaritopio+blankbreed@example.com")
+                .username("pajaritomeztizo@example.com")
                 .password("any")
                 .roles(java.util.Collections.emptySet())
                 .build();
@@ -322,6 +322,39 @@ class PetControllerTest {
       "species": "Dog",
       "breed": "   ",
       "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 12.4
+    }
+    """.formatted(java.time.LocalDate.now().minusYears(3));
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(invalidJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(org.springframework.http.MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("must not be blank")));
+    }
+
+    @Test
+    @DisplayName("400 crear mascota: BAD_REQUEST cuando el sexo está en blanco")
+    void should_return_400_when_sex_is_blank() throws Exception {
+        var owner = UserEntity.builder()
+                .username("pajaritopiohavenosex@example.com")
+                .password("any")
+                .roles(java.util.Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+
+        String bearer = bearerFor(owner.getUsername());
+
+        String invalidJson = """
+    {
+      "name": "Pony",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "   ",
       "birthDate": "%s",
       "weightKg": 12.4
     }

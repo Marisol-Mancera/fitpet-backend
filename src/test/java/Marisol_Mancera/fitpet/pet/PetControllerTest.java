@@ -197,7 +197,7 @@ class PetControllerTest {
     @Test
     @DisplayName("401 crear mascota: UNAUTHORIZED cuando no hay token Bearer")
     void should_return_401_when_no_bearer_token() throws Exception {
-        // Arrange: payload completamente válido (el fallo debe ser SOLO la falta de autenticación,
+        // payload completamente válido (el fallo debe ser SOLO la falta de autenticación,
         //tpico caso cuando pasa mucho tiempo desde la autenticación)
         String validJson = """
     {
@@ -210,13 +210,47 @@ class PetControllerTest {
     }
     """.formatted(LocalDate.now().minusYears(3));
 
-        // Act & Assert: llamada SIN cabecera Authorization
         mockMvc.perform(post("/api/v1/pets")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(validJson))
                 .andExpect(status().isUnauthorized())
                 // El Resource Server expone este header con el esquema requerido
                 .andExpect(header().string("WWW-Authenticate", containsString("Bearer")));
+    }
+
+    @Test
+    @DisplayName("400 crear mascota: BAD_REQUEST cuando la fecha de nacimiento es nula")
+    void should_return_400_when_birth_date_is_null() throws Exception {
+        // Arrange: username único para evitar colisiones
+        var owner = UserEntity.builder()
+                .username("pajaritopio+nullbirth@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+
+        String bearer = bearerFor(owner.getUsername());
+
+        // birthDate: null (sin comillas) para que el parser lo trate como JSON null
+        String invalidJson = """
+    {
+      "name": "Pony",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": null,
+      "weightKg": 12.4
+    }
+    """;
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(invalidJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message", containsString("must not be null")));
     }
 
 }

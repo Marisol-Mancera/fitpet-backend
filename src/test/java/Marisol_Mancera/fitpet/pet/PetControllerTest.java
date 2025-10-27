@@ -198,8 +198,6 @@ class PetControllerTest {
     @Test
     @DisplayName("401 crear mascota: UNAUTHORIZED cuando no hay token Bearer")
     void should_return_401_when_no_bearer_token() throws Exception {
-        // payload completamente válido (el fallo debe ser SOLO la falta de autenticación,
-        //tpico caso cuando pasa mucho tiempo desde la autenticación)
         String validJson = """
     {
       "name": "Pony",
@@ -222,9 +220,8 @@ class PetControllerTest {
     @Test
     @DisplayName("400 crear mascota: BAD_REQUEST cuando la fecha de nacimiento es nula")
     void should_return_400_when_birth_date_is_null() throws Exception {
-        // Arrange: username único para evitar colisiones
         var owner = UserEntity.builder()
-                .username("pajaritopio+nullbirth@example.com")
+                .username("pajaritopio65@example.com")
                 .password("any")
                 .roles(Collections.emptySet())
                 .build();
@@ -258,7 +255,7 @@ class PetControllerTest {
     @DisplayName("400 crear mascota: BAD_REQUEST cuando el body está vacío")
     void should_return_400_when_body_is_empty() throws Exception {
         var owner = UserEntity.builder()
-                .username("pajaritopio+emptybody@example.com")
+                .username("pollitopio@example.com")
                 .password("any")
                 .roles(java.util.Collections.emptySet())
                 .build();
@@ -271,7 +268,40 @@ class PetControllerTest {
                 .header("Authorization", bearer)
                 .content(""))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(blankOrNullString())); 
+                .andExpect(content().string(blankOrNullString()));
+    }
+
+    @Test
+    @DisplayName("400 crear mascota: BAD_REQUEST cuando la especie está en blanco")
+    void should_return_400_when_species_is_blank() throws Exception {
+        var owner = UserEntity.builder()
+                .username("vacaypollo@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+
+        String bearer = bearerFor(owner.getUsername());
+
+        String invalidJson = """
+    {
+      "name": "Pony",
+      "species": "   ",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 12.4
+    }
+    """.formatted(LocalDate.now().minusYears(3));
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(invalidJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message", containsString("must not be blank")));
     }
 
 }

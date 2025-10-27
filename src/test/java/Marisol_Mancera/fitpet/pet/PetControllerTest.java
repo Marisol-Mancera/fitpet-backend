@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.blankOrNullString;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesPattern;
 import org.junit.jupiter.api.DisplayName;
@@ -251,6 +252,26 @@ class PetControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
                 .andExpect(jsonPath("$.message", containsString("must not be null")));
+    }
+
+    @Test
+    @DisplayName("400 crear mascota: BAD_REQUEST cuando el body está vacío")
+    void should_return_400_when_body_is_empty() throws Exception {
+        var owner = UserEntity.builder()
+                .username("pajaritopio+emptybody@example.com")
+                .password("any")
+                .roles(java.util.Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+
+        String bearer = bearerFor(owner.getUsername());
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(""))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(blankOrNullString())); 
     }
 
 }

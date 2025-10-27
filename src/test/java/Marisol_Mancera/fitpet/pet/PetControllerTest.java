@@ -437,4 +437,12 @@ class PetControllerTest {
                 .andExpect(jsonPath("$[0].ownerId").value(ownerA.getId()));
     }
 
+    @Test
+    @DisplayName("401 listar mascotas: UNAUTHORIZED cuando no hay token Bearer")
+    void should_return_401_when_list_without_bearer_token() throws Exception {
+        mockMvc.perform(get("/api/v1/pets"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", containsString("Bearer")));
+    }
+
 }

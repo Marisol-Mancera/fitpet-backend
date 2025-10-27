@@ -445,4 +445,23 @@ class PetControllerTest {
                 .andExpect(header().string("WWW-Authenticate", containsString("Bearer")));
     }
 
+    @Test
+    @DisplayName("200 listar mascotas: devuelve array vacío cuando el dueño no tiene mascotas")
+    void should_return_empty_list_when_owner_has_no_pets() throws Exception {
+        //usuario sin mascotas
+        var lonely = UserEntity.builder()
+                .username("karensinmascota@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(lonely);
+
+        String bearer = bearerFor(lonely.getUsername());
+
+        mockMvc.perform(get("/api/v1/pets")
+                .header("Authorization", bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
 }

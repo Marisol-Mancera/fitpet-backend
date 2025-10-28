@@ -683,4 +683,25 @@ class PetControllerTest {
                 .andExpect(jsonPath("$.message").value("Pet not found"));
     }
 
+    @Test
+    @DisplayName("404 obtener mascota: Problem Object con content-type application/json")
+    void should_return_404_problem_object_with_json_content_type() throws Exception {
+        var owner = UserEntity.builder()
+                .username("problem.ct.json@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+
+        String bearer = bearerFor(owner.getUsername());
+
+        mockMvc.perform(get("/api/v1/pets/{id}", 123456789L)
+                .header("Authorization", bearer)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Pet not found"));
+    }
+
 }

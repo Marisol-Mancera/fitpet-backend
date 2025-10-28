@@ -23,10 +23,10 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.MockMvc;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -728,4 +728,63 @@ class PetControllerTest {
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Pet not found"));
     }
+
+    @Test
+    @DisplayName("200 actualizar mascota: el dueño puede modificar los campos básicos por id")
+    void should_update_pet_fields_by_id_for_owner() throws Exception {
+        //dueño y mascota inicial
+        var owner = UserEntity.builder()
+                .username("actualizatekaren@example.com")
+                .password("any")
+                .roles(java.util.Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+        String bearer = bearerFor(owner.getUsername());
+
+        String original = """
+    {
+      "name": "Pony",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 9.5
+    }
+    """.formatted(java.time.LocalDate.now().minusYears(3));
+
+        var created = mockMvc.perform(post("/api/v1/pets")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(original))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.matchesPattern("/api/v1/pets/\\d+")))
+                .andReturn();
+
+        String location = created.getResponse().getHeader("Location");
+
+        // PUT con cambios (name, weightKg) manteniendo el resto
+        String updated = """
+    {
+      "name": "Pony Updated",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 10.2
+    }
+    """.formatted(java.time.LocalDate.now().minusYears(3));
+
+        //200 y DTO con valores actualizados
+        mockMvc.perform(put(location)
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(updated))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Pony Updated"))
+                .andExpect(jsonPath("$.weightKg").value(10.2))
+                .andExpect(jsonPath("$.species").value("Dog"))
+                .andExpect(jsonPath("$.breed").value("Beagle"))
+                .andExpect(jsonPath("$.sex").value("Female"));
+    }
+
 }

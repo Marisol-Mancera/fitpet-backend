@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -76,5 +77,29 @@ public class PetController {
         //borrar y devolver 204
         petRepository.delete(pet);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}") 
+    public ResponseEntity<PetDTOResponse> updateById(@PathVariable Long id,
+            @RequestBody @Valid PetCreateRequest request) { 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication(); 
+        String username = auth.getName();                                             
+
+        //argar mascota y verificar pertenencia
+        PetEntity pet = petRepository.findById(id) 
+                .filter(p -> p.getOwner() != null && username.equals(p.getOwner().getUsername()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
+
+        //aplicar cambios (normalizamos como en create: trim en strings)
+        pet.setName(request.name().trim());           
+        pet.setSpecies(request.species().trim());     
+        pet.setBreed(request.breed().trim());        
+        pet.setSex(request.sex().trim());             
+        pet.setBirthDate(request.birthDate());        
+        pet.setWeightKg(request.weightKg());          
+
+        // 4) persistir y devolver DTO
+        PetEntity saved = petRepository.save(pet);    
+        return ResponseEntity.ok(PetMapper.toDTO(saved)); 
     }
 }

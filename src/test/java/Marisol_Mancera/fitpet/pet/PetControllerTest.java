@@ -366,13 +366,13 @@ class PetControllerTest {
     """.formatted(java.time.LocalDate.now().minusYears(3));
 
         mockMvc.perform(post("/api/v1/pets")
-                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", bearer)
                 .content(invalidJson))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().contentTypeCompatibleWith(org.springframework.http.MediaType.APPLICATION_JSON))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-                .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("must not be blank")));
+                .andExpect(jsonPath("$.message", containsString("must not be blank")));
     }
 
     @Test
@@ -706,9 +706,26 @@ class PetControllerTest {
                 .header("Authorization", bearer))
                 .andExpect(status().isNoContent());
 
-        // Sanity check (opcional pero útil): GET posterior → 404 NOT_FOUND
-        mockMvc.perform(get(location)
-                .header("Authorization", bearer))
-                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("404 eliminar mascota: NOT_FOUND cuando el id no existe")
+    void should_return_404_when_deleting_non_existing_pet() throws Exception {
+
+        var owner = UserEntity.builder()
+                .username("delete.nonexistent@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+        String bearer = bearerFor(owner.getUsername());
+
+        //id inexistente -> 404 con Problem Object
+        mockMvc.perform(delete("/api/v1/pets/{id}", 999_999L)
+                .header("Authorization", bearer)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Pet not found"));
     }
 }

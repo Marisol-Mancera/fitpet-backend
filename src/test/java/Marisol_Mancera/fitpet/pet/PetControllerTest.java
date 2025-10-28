@@ -23,6 +23,8 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -615,7 +617,7 @@ class PetControllerTest {
     void should_return_404_when_pet_id_not_found() throws Exception {
         //usuario autenticado sin mascotas
         var owner = UserEntity.builder()
-                .username("notfound.owner@example.com")
+                .username("karennoesta@example.com")
                 .password("any")
                 .roles(Collections.emptySet())
                 .build();
@@ -632,4 +634,81 @@ class PetControllerTest {
                 .andExpect(jsonPath("$.message").value("Pet not found"));
     }
 
+    @Test
+    @DisplayName("201 crear mascota: normaliza campos con espacios (trim en service)")
+    void should_trim_string_fields_when_creating_pet() throws Exception {
+
+        var owner = UserEntity.builder()
+                .username("eltrimdekarem@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+        String bearer = bearerFor(owner.getUsername());
+
+        String petJson = """
+    {
+      "name": "  Pony  ",
+      "species": "  Dog ",
+      "breed": " Beagle  ",
+      "sex": "  Female ",
+      "birthDate": "%s",
+      "weightKg": 7.5
+    }
+    """.formatted(LocalDate.now().minusYears(2));
+
+        mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(petJson))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                .andExpect(jsonPath("$.name").value("Pony"))
+                .andExpect(jsonPath("$.species").value("Dog"))
+                .andExpect(jsonPath("$.breed").value("Beagle"))
+                .andExpect(jsonPath("$.sex").value("Female"));
+    }
+
+    @Test
+    @DisplayName("204 eliminar mascota: borra la mascota del dueño autenticado por id")
+    void should_delete_pet_by_id_and_return_204() throws Exception {
+
+        var owner = UserEntity.builder()
+                .username("karenfulminada@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+        String bearer = bearerFor(owner.getUsername());
+
+        String petJson = """
+    {
+      "name": "DeleteMe",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 8.0
+    }
+    """.formatted(LocalDate.now().minusYears(2));
+
+        var createResult = mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(petJson))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                .andReturn();
+
+        String location = createResult.getResponse().getHeader("Location");
+
+        mockMvc.perform(delete(location)
+                .header("Authorization", bearer))
+                .andExpect(status().isNoContent());
+
+        // Sanity check (opcional pero útil): GET posterior → 404 NOT_FOUND
+        mockMvc.perform(get(location)
+                .header("Authorization", bearer))
+                .andExpect(status().isNotFound());
+    }
 }

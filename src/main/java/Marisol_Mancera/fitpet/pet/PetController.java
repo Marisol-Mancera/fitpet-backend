@@ -40,28 +40,22 @@ public class PetController {
 
     @GetMapping
     public ResponseEntity<List<PetDTOResponse>> listMine() {
-
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
-        // filtrado en memoria para NO tocar repositorio/servicio en este paso
-        var result = petRepository.findAll().stream() // obtenemos todas
-                .filter(p -> p.getOwner() != null
-                && p.getOwner().getUsername() != null
-                && p.getOwner().getUsername().equals(username)) // solo las del dueño
-                .map(PetMapper::toDTO) // mapeo a DTO
-                .collect(Collectors.toList());                            // lista final
+        var result = petRepository.findByOwner_Username(username).stream()
+                .map(PetMapper::toDTO)
+                .collect(Collectors.toList());
 
-        return ResponseEntity.ok(result);                                 // 200 OK con el array
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PetDTOResponse> getById(@PathVariable Long id) {
-
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
-        PetEntity pet = petRepository.findById(id)
+        var pet = petRepository.findById(id)
                 .filter(p -> p.getOwner() != null && username.equals(p.getOwner().getUsername()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
 

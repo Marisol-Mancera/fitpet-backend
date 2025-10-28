@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.blankOrNullString;
@@ -513,7 +514,7 @@ class PetControllerTest {
     void should_return_two_pets_for_owner() throws Exception {
         // dueño con 2 mascotas
         var owner = UserEntity.builder()
-                .username("elkaren+2@example.com")
+                .username("elkarenmacho+2@example.com")
                 .password("any")
                 .roles(Collections.emptySet())
                 .build();
@@ -561,6 +562,77 @@ class PetControllerTest {
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].ownerId").value(owner.getId()))
                 .andExpect(jsonPath("$[1].ownerId").value(owner.getId()));
+    }
+
+    @Test
+    @DisplayName("200 obtener mascota: devuelve la mascota del dueño autenticado por id")
+    void should_return_a_pet_by_id() throws Exception {
+        // crea dueño y su JWT
+        var owner = UserEntity.builder()
+                .username("pajaritomudo@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+        String bearer = bearerFor(owner.getUsername());
+
+        // crea una mascota para ese dueño
+        String petJson = """
+    {
+      "name": "DetailPony",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 11.3
+    }
+    """.formatted(LocalDate.now().minusYears(3));
+
+        var createResult = mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearer)
+                .content(petJson))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                .andReturn();
+
+        String location = Objects.requireNonNull(
+                createResult.getResponse().getHeader("Location"));
+
+        // GET {id} con el mismo dueño
+        mockMvc.perform(get(location)
+                .header("Authorization", bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.ownerId").value(owner.getId()))
+                .andExpect(jsonPath("$.name").value("DetailPony"))
+                .andExpect(jsonPath("$.species").value("Dog"))
+                .andExpect(jsonPath("$.breed").value("Beagle"))
+                .andExpect(jsonPath("$.sex").value("Female"))
+                .andExpect(jsonPath("$.birthDate").exists())
+                .andExpect(jsonPath("$.weightKg").value(11.3));
+    }
+
+    @Test
+    @DisplayName("404 obtener mascota: NOT_FOUND cuando el id no existe")
+    void should_return_404_when_pet_id_not_found() throws Exception {
+        //usuario autenticado sin mascotas
+        var owner = UserEntity.builder()
+                .username("notfound.owner@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(owner);
+
+        String bearer = bearerFor(owner.getUsername());
+
+        //GET a un id inexistente
+        mockMvc.perform(get("/api/v1/pets/{id}", 999999L)
+                .header("Authorization", bearer)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Pet not found"));
     }
 
 }

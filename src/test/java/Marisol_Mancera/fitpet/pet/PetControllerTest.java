@@ -635,4 +635,55 @@ class PetControllerTest {
                 .andExpect(jsonPath("$.message").value("Pet not found"));
     }
 
+    @Test
+    @DisplayName("404 obtener mascota: NOT_FOUND cuando la mascota pertenece a otro dueño")
+    void should_return_404_when_pet_belongs_to_another_owner() throws Exception {
+        //dos dueños
+        var ownerA = UserEntity.builder()
+                .username("lakarena@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        var ownerB = UserEntity.builder()
+                .username("elkarenmacho.b@example.com")
+                .password("any")
+                .roles(Collections.emptySet())
+                .build();
+        userRepository.save(ownerA);
+        userRepository.save(ownerB);
+
+        String bearerA = bearerFor(ownerA.getUsername());
+        String bearerB = bearerFor(ownerB.getUsername());
+
+        // Creamos una mascota para A
+        String petJson = """
+    {
+      "name": "Ajena",
+      "species": "Dog",
+      "breed": "Beagle",
+      "sex": "Female",
+      "birthDate": "%s",
+      "weightKg": 12.0
+    }
+    """.formatted(LocalDate.now().minusYears(3));
+
+        var createResult = mockMvc.perform(post("/api/v1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", bearerA)
+                .content(petJson))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                .andReturn();
+
+        String location = createResult.getResponse().getHeader("Location");
+
+        // B intenta leer la mascota de A → 404 NOT_FOUND (Problem)
+        mockMvc.perform(get(location)
+                .header("Authorization", bearerB)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Pet not found"));
+    }
+
 }

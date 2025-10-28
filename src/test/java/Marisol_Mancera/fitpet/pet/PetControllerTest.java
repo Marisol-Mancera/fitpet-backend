@@ -447,20 +447,19 @@ class PetControllerTest {
     }
 
     @Test
-    @DisplayName("200 listar mascotas: devuelve array vacío cuando el dueño no tiene mascotas")
+    @DisplayName("200 listar mascotas: devuelve lista vacía cuando el dueño no tiene mascotas")
     void should_return_empty_list_when_owner_has_no_pets() throws Exception {
-        //usuario sin mascotas
-        var lonely = UserEntity.builder()
-                .username("karensinmascota@example.com")
+        var owner = UserEntity.builder()
+                .username("Karentriste@example.com")
                 .password("any")
                 .roles(Collections.emptySet())
                 .build();
-        userRepository.save(lonely);
-
-        String bearer = bearerFor(lonely.getUsername());
+        userRepository.save(owner);
+        String bearer = bearerFor(owner.getUsername());
 
         mockMvc.perform(get("/api/v1/pets")
-                .header("Authorization", bearer))
+                .header("Authorization", bearer)
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
     }
@@ -468,7 +467,6 @@ class PetControllerTest {
     @Test
     @DisplayName("200 listar mascotas: devuelve array con campos mínimos")
     void should_return_list_with_minimal_schema_fields() throws Exception {
-        //dueño con 1 mascota para validar el esquema
         var owner = UserEntity.builder()
                 .username("lasmascotasdelkarenmacho@example.com")
                 .password("any")
@@ -494,7 +492,6 @@ class PetControllerTest {
                 .content(petJson))
                 .andExpect(status().isCreated());
 
-        //GET debe devolver 1 elemento con los campos mínimos
         mockMvc.perform(get("/api/v1/pets")
                 .header("Authorization", bearer))
                 .andExpect(status().isOk())

@@ -53,52 +53,47 @@ public class PetController {
     }
 
     @GetMapping("/{id}")
-public ResponseEntity<PetDTOResponse> getById(@PathVariable Long id) {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication(); 
-    String username = auth.getName();                                             
-
-    var pet = petRepository.findByIdAndOwner_Username(id, username)                
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found")); 
-
-    return ResponseEntity.ok(PetMapper.toDTO(pet));                               
-}
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteById(@PathVariable Long id) {
+    public ResponseEntity<PetDTOResponse> getById(@PathVariable Long id) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
-        //busca la mascota y verificar pertenencia
+        var pet = petRepository.findByIdAndOwner_Username(id, username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
+
+        return ResponseEntity.ok(PetMapper.toDTO(pet));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication(); 
+        String username = auth.getName();                                            
+
+        PetEntity pet = petRepository.findByIdAndOwner_Username(id, username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
+
+        petRepository.delete(pet);                                                  
+        return ResponseEntity.noContent().build();                                   
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<PetDTOResponse> updateById(@PathVariable Long id,
+            @RequestBody @Valid PetCreateRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
         PetEntity pet = petRepository.findById(id)
                 .filter(p -> p.getOwner() != null && username.equals(p.getOwner().getUsername()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
 
-        //borrar y devolver 204
-        petRepository.delete(pet);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PutMapping("/{id}") 
-    public ResponseEntity<PetDTOResponse> updateById(@PathVariable Long id,
-            @RequestBody @Valid PetCreateRequest request) { 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication(); 
-        String username = auth.getName();                                             
-
-        //argar mascota y verificar pertenencia
-        PetEntity pet = petRepository.findById(id) 
-                .filter(p -> p.getOwner() != null && username.equals(p.getOwner().getUsername()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
-
-        //aplicar cambios (normalizamos como en create: trim en strings)
-        pet.setName(request.name().trim());           
-        pet.setSpecies(request.species().trim());     
-        pet.setBreed(request.breed().trim());        
-        pet.setSex(request.sex().trim());             
-        pet.setBirthDate(request.birthDate());        
-        pet.setWeightKg(request.weightKg());          
+        pet.setName(request.name().trim());
+        pet.setSpecies(request.species().trim());
+        pet.setBreed(request.breed().trim());
+        pet.setSex(request.sex().trim());
+        pet.setBirthDate(request.birthDate());
+        pet.setWeightKg(request.weightKg());
 
         // 4) persistir y devolver DTO
-        PetEntity saved = petRepository.save(pet);    
-        return ResponseEntity.ok(PetMapper.toDTO(saved)); 
+        PetEntity saved = petRepository.save(pet);
+        return ResponseEntity.ok(PetMapper.toDTO(saved));
     }
 }

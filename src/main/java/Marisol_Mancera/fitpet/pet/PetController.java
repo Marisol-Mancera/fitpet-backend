@@ -1,6 +1,5 @@
 package Marisol_Mancera.fitpet.pet;
 
-import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,10 +43,15 @@ public class PetController {
         return ResponseEntity.created(location).body(dto);
     }
 
+    private String currentUsername() { 
+        return SecurityContextHolder.getContext() 
+                .getAuthentication() 
+                .getName(); 
+    }
+
     @GetMapping
     public ResponseEntity<List<PetDTOResponse>> listMine() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
+        String username = currentUsername(); // [*] usa helper
 
         var result = petRepository.findByOwner_Username(username).stream()
                 .map(PetMapper::toDTO)

@@ -65,14 +65,14 @@ public class PetController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication(); 
-        String username = auth.getName();                                            
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
 
         PetEntity pet = petRepository.findByIdAndOwner_Username(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
 
-        petRepository.delete(pet);                                                  
-        return ResponseEntity.noContent().build();                                   
+        petRepository.delete(pet);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")
@@ -81,8 +81,8 @@ public class PetController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
-        PetEntity pet = petRepository.findById(id)
-                .filter(p -> p.getOwner() != null && username.equals(p.getOwner().getUsername()))
+        // consulta directa por id y owner
+        PetEntity pet = petRepository.findByIdAndOwner_Username(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
 
         pet.setName(request.name().trim());
@@ -92,7 +92,6 @@ public class PetController {
         pet.setBirthDate(request.birthDate());
         pet.setWeightKg(request.weightKg());
 
-        // 4) persistir y devolver DTO
         PetEntity saved = petRepository.save(pet);
         return ResponseEntity.ok(PetMapper.toDTO(saved));
     }

@@ -53,16 +53,15 @@ public class PetController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PetDTOResponse> getById(@PathVariable Long id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
+public ResponseEntity<PetDTOResponse> getById(@PathVariable Long id) {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication(); 
+    String username = auth.getName();                                             
 
-        var pet = petRepository.findById(id)
-                .filter(p -> p.getOwner() != null && username.equals(p.getOwner().getUsername()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
+    var pet = petRepository.findByIdAndOwner_Username(id, username)                
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found")); 
 
-        return ResponseEntity.ok(PetMapper.toDTO(pet));
-    }
+    return ResponseEntity.ok(PetMapper.toDTO(pet));                               
+}
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable Long id) {

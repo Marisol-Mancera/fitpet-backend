@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import Marisol_Mancera.fitpet.pet.dto.PetCreateRequest;
 import Marisol_Mancera.fitpet.pet.dto.PetDTOResponse;
@@ -36,8 +37,11 @@ public class PetController {
     public ResponseEntity<PetDTOResponse> create(@Valid @RequestBody PetCreateRequest request) {
         var saved = petService.createForCurrentOwner(request);
         var dto = PetMapper.toDTO(saved);
-        return ResponseEntity.created(URI.create("/api/v1/pets/" + saved.getId()))
-                .body(dto);
+        var location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(saved.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(dto);
     }
 
     @GetMapping

@@ -750,14 +750,14 @@ class PetControllerTest {
       "birthDate": "%s",
       "weightKg": 9.5
     }
-    """.formatted(java.time.LocalDate.now().minusYears(3));
+    """.formatted(LocalDate.now().minusYears(3));
 
         var created = mockMvc.perform(post("/api/v1/pets")
-                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", bearer)
                 .content(original))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", org.hamcrest.Matchers.matchesPattern("/api/v1/pets/\\d+")))
+                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
                 .andReturn();
 
         String location = created.getResponse().getHeader("Location");
@@ -772,11 +772,11 @@ class PetControllerTest {
       "birthDate": "%s",
       "weightKg": 10.2
     }
-    """.formatted(java.time.LocalDate.now().minusYears(3));
+    """.formatted(LocalDate.now().minusYears(3));
 
         //200 y DTO con valores actualizados
         mockMvc.perform(put(location)
-                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", bearer)
                 .content(updated))
                 .andExpect(status().isOk())
@@ -786,5 +786,6 @@ class PetControllerTest {
                 .andExpect(jsonPath("$.breed").value("Beagle"))
                 .andExpect(jsonPath("$.sex").value("Female"));
     }
+
 
 }

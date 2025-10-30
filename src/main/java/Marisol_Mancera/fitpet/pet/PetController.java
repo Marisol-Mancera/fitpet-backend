@@ -43,10 +43,10 @@ public class PetController {
         return ResponseEntity.created(location).body(dto);
     }
 
-    private String currentUsername() { 
-        return SecurityContextHolder.getContext() 
-                .getAuthentication() 
-                .getName(); 
+    private String currentUsername() {
+        return SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
     }
 
     @GetMapping
@@ -62,8 +62,7 @@ public class PetController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PetDTOResponse> getById(@PathVariable Long id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
+        String username = currentUsername(); 
 
         var pet = petRepository.findByIdAndOwner_Username(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));

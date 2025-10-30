@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,7 +50,7 @@ public class PetController {
 
     @GetMapping
     public ResponseEntity<List<PetDTOResponse>> listMine() {
-        String username = currentUsername(); // [*] usa helper
+        String username = currentUsername(); 
 
         var result = petRepository.findByOwner_Username(username).stream()
                 .map(PetMapper::toDTO)
@@ -72,8 +71,7 @@ public class PetController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
+        String username = currentUsername(); 
 
         PetEntity pet = petRepository.findByIdAndOwner_Username(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
@@ -85,10 +83,8 @@ public class PetController {
     @PutMapping("/{id}")
     public ResponseEntity<PetDTOResponse> updateById(@PathVariable Long id,
             @RequestBody @Valid PetCreateRequest request) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
+        String username = currentUsername(); 
 
-        // consulta directa por id y owner
         PetEntity pet = petRepository.findByIdAndOwner_Username(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
 

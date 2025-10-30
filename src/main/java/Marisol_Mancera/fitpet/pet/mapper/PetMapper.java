@@ -9,6 +9,9 @@ public final class PetMapper {
     private PetMapper() {}
 
     public static PetDTOResponse toDTO(PetEntity e) {
+
+        final String placeholderUrl = "https://placehold.co/600x400?text=Sin+imagen";
+
         return new PetDTOResponse(
                 e.getId(),
                 e.getOwner().getId(),
@@ -17,7 +20,8 @@ public final class PetMapper {
                 e.getBreed(),
                 e.getSex(),
                 e.getBirthDate(),
-                e.getWeightKg()
+                e.getWeightKg(),
+                e.getImageUrl() != null ? e.getImageUrl() : placeholderUrl
         );
     }
 }

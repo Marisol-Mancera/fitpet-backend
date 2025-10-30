@@ -62,5 +62,8 @@ public class PetEntity {
     @Positive
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal weightKg;
+
+    @Column(name = "image_url", length = 512, nullable = true)
+    private String imageUrl;
 }
 

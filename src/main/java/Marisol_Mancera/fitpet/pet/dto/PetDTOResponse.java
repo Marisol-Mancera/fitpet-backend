@@ -1,3 +1,4 @@
+// [EDIT] Añadimos el nuevo campo opcional imageUrl al record, para MVP de HU4
 package Marisol_Mancera.fitpet.pet.dto;
 
 import java.math.BigDecimal;
@@ -11,6 +12,7 @@ public record PetDTOResponse(
         String breed,
         String sex,
         LocalDate birthDate,
-        BigDecimal weightKg
+        BigDecimal weightKg,
+        String imageUrl
+        
 ) { }
-

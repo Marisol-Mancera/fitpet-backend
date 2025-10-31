@@ -890,4 +890,32 @@ class PetControllerTest {
         .andExpect(jsonPath("$[0].imageUrl").exists());
   }
 
+  @Test
+@DisplayName("200 listar: si no hay imagen guardada se devuelve un placeholder en imageUrl")
+void should_return_placeholder_image_when_pet_has_no_image() throws Exception {
+  var owner = UserEntity.builder()
+      .username("placeholder@test.example")
+      .password("any")
+      .roles(Collections.emptySet())
+      .build();
+  userRepository.save(owner);
+  String bearer = bearerFor(owner.getUsername());
+
+  var pet = new PetEntity();
+  pet.setOwner(owner);
+  pet.setName("SinFoto");
+  pet.setSpecies("Dog");
+  pet.setBreed("Mestizo");
+  pet.setSex("Female");
+  pet.setBirthDate(LocalDate.now().minusYears(2));
+  pet.setWeightKg(new BigDecimal("7.0"));
+
+  petRepository.save(pet);
+  mockMvc.perform(get("/api/v1/pets")
+          .header(org.springframework.http.HttpHeaders.AUTHORIZATION, bearer))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$[0].name").value("SinFoto"))
+      .andExpect(jsonPath("$[0].imageUrl").value("https://placehold.co/600x400?text=Sin+imagen"));
+}
+
 }

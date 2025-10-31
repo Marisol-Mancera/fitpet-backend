@@ -2,6 +2,7 @@ package Marisol_Mancera.fitpet.pet;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +54,7 @@ public class PetController {
         String username = currentUsername(); 
 
         var result = petRepository.findByOwner_Username(username).stream()
+                .sorted(Comparator.comparing(PetEntity::getName, String.CASE_INSENSITIVE_ORDER))
                 .map(PetMapper::toDTO)
                 .collect(Collectors.toList());
 

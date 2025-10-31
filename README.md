@@ -180,9 +180,10 @@ mvn clean verify
 
 <img width="585" height="787" alt="Captura de pantalla 2025-10-31 140449" src="https://github.com/user-attachments/assets/d941267f-0c4a-436c-bc0e-50b147192ad1" />
 
-```
 
 ---
+
+
 
 ## 🗂 Estructura de paquetes
 

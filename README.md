@@ -2,6 +2,8 @@
 
 API REST para autenticación con **JWT** y **gestión de mascotas** (CRUD) con **propiedad por usuario**. Base de datos **MySQL** en **Docker Compose**. Seguridad **stateless** con Spring Security. Perfiles `mysql` (principal) y `h2` (desarrollo local).
 
+Puedes acceder al Frontend en 👉 https://github.com/Marisol-Mancera/fitpet-frontend
+
 ---
 
 ## 🎯 Alcance 

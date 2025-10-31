@@ -17,6 +17,20 @@ Fuera de PMV (planificado): CORS fino, paginación, badges/goals, Flyway, swagge
 
 ---
 
+## 🧾 Documentación de API (Postman)
+
+La API ha sido documentada y validada completamente en Postman.  
+Puedes acceder a la colección oficial del proyecto en el siguiente enlace:
+
+👉 [Colección Postman – FitPet API](https://postman.co/workspace/Formacion-f5~8ec198c2-5483-418c-bf18-396c04843022/collection/45994336-9fd428ee-48f0-4f43-b01e-44bce220750f?action=share&creator=45994336&active-environment=45994336-0bb997da-ee0a-45a9-bae4-5ed4452686fc)
+
+Esta colección incluye ejemplos listos para ejecutar de:
+- Registro y autenticación JWT.
+- CRUD completo de mascotas (con token dinámico).
+- Validaciones y respuestas de error (Problem Object).
+
+---
+
 ## 🧠 Arquitectura
 
 Capas: Controller → Service → Repository → DB, con DTOs para entrada/salida, mapeadores simples y handler global de errores.

@@ -90,7 +90,7 @@ class AuthControllerTest {
     }
 
     // ========================================
-    // TESTS DE REGISTRO (HU1)
+    // TESTS DE REGISTRO 
     // ========================================
 
     @Test
@@ -189,7 +189,7 @@ class AuthControllerTest {
     }
 
     // ========================================
-    // TESTS DE LOGIN (HU2)
+    // TESTS DE LOGIN 
     // ========================================
 
     @Test

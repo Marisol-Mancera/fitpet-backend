@@ -2,70 +2,86 @@ package Marisol_Mancera.fitpet.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Seguridad en modo JWT stateless. - Sin sesiones de servidor (STATELESS). -
- * CSRF desactivado para API REST. - H2 console permitida y con frames
- * sameOrigin. - Endpoints públicos: /auth/registro, /auth/token, H2, Swagger. -
- * Resto autenticado mediante Bearer JWT.
- */
+ * Configuración de seguridad con JWT
+ * 
+ * Responsabilidades:
+ * - Autenticación y autorización
+ * - Configuración de endpoints públicos/protegidos
+ * - Integración con OAuth2 Resource Server (JWT)
+ * - Política de sesiones (stateless)
+ * 
+ * CORS: Configurado en CorsConfig.java (separado por SRP)
+  */
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
+    /**
+     * Configuración de la cadena de filtros de seguridad
+     * 
+     * - /api/v1/auth/registro (público)
+     * - /api/v1/auth/login (público)
+     * - Resto de endpoints protegidos con JWT
+     * - CORS habilitado (configuración en CorsConfig.java)
+     * 
+     * @param http HttpSecurity builder
+     * @return SecurityFilterChain configurado
+     * @throws Exception si hay error en configuración
+     */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-
-    @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // API stateless
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .csrf(csrf -> csrf.disable())
-                // H2 console + swagger públicos
-                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-                .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // Auth públicas
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/registro").permitAll()
+            // Habilitar CORS (configuración viene de CorsConfig.java)
+            // Spring inyecta automáticamente el bean corsConfigurationSource()
+            .cors(cors -> {})  // Usa configuración del @Bean corsConfigurationSource
+            
+            // Deshabilitar CSRF (no necesario para API REST con JWT?)
+            .csrf(csrf -> csrf.disable())
+            
+            // Configuración de autorización
+            .authorizeHttpRequests(auth -> auth
+                // Endpoints públicos 
+                .requestMatchers("/api/v1/auth/registro").permitAll()
                 .requestMatchers("/api/v1/auth/login").permitAll()
-                // cuando emitas tokens con scopes, puedes afinar por scope:
-                // .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAuthority("SCOPE_USER")
-                // .requestMatchers("/api/v1/admin/**").hasAuthority("SCOPE_ADMIN")
-
+                
+                // Swagger UI
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                
+                // Actuator
+                .requestMatchers("/actuator/**").permitAll()
+                
+                // Resto de endpoints requieren autenticación (JWT)
                 .anyRequest().authenticated()
-                )
-                // Resource Server JWT
-                .oauth2ResourceServer(oauth -> oauth
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
-                );
+            )
+            
+            // OAuth2 Resource Server con JWT
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}))
+            
+            // Política de sesión: Stateless (sin sesiones HTTP, solo JWT)
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            );
 
         return http.build();
     }
 
     /**
-     * Convierte el claim "scope" en authorities con prefijo SCOPE_. Ej.: scope:
-     * "USER ADMIN" -> authorities: SCOPE_USER, SCOPE_ADMIN
+     * Encoder de contraseñas (BCrypt)
+     * 
+     * Usado para hashear contraseñas en registro y para validar contraseñas en login
+     * 
+     * @return PasswordEncoder con algoritmo BCrypt
      */
     @Bean
-    JwtAuthenticationConverter jwtAuthenticationConverter() {
-        var granted = new JwtGrantedAuthoritiesConverter();
-        granted.setAuthoritiesClaimName("scope");
-        granted.setAuthorityPrefix("SCOPE_");
-
-        var converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(granted);
-        return converter;
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
-
 }

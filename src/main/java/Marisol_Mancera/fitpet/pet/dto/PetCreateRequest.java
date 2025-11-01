@@ -14,6 +14,8 @@ public record PetCreateRequest(
         @NotBlank String breed,
         @NotBlank String sex,
         @NotNull @Past LocalDate birthDate,
-        @NotNull @Positive BigDecimal weightKg
+        @NotNull @Positive BigDecimal weightKg,
+        String imageUrl
+
 ) { }
 

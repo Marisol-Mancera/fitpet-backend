@@ -26,6 +26,15 @@ public class PetService {
         UserEntity owner = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
+        // Normalización de imageUrl opcional: trim y "" -> null
+        String normalizedImageUrl = null;                                  
+        if (req.imageUrl() != null) {                                      
+            String trimmed = req.imageUrl().trim();                        
+            if (!trimmed.isEmpty()) {                                      
+                normalizedImageUrl = trimmed;                              
+            }                                                               
+        }                                                                   
+
         PetEntity entity = PetEntity.builder()
                 .owner(owner)
                 .name(req.name().trim())
@@ -34,9 +43,9 @@ public class PetService {
                 .sex(req.sex().trim())
                 .birthDate(req.birthDate())
                 .weightKg(req.weightKg())
+                .imageUrl(normalizedImageUrl)                               
                 .build();
 
         return petRepository.save(entity);
     }
 }
-

@@ -97,6 +97,11 @@ public class PetController {
         pet.setBirthDate(request.birthDate());
         pet.setWeightKg(request.weightKg());
 
+        if (request.imageUrl() != null) {                        
+        String trimmed = request.imageUrl().trim();          
+        pet.setImageUrl(trimmed.isEmpty() ? null : trimmed);  
+    }
+
         PetEntity saved = petRepository.save(pet);
         return ResponseEntity.ok(PetMapper.toDTO(saved));
     }

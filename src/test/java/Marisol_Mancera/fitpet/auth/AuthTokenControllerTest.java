@@ -234,9 +234,9 @@ class AuthTokenControllerTest {
     }
 
     @Test
-    @DisplayName("200 login: credenciales válidas → devuelve AuthDTOResponse con email normalizado")
+    @DisplayName("201 login: credenciales válidas → devuelve AuthDTOResponse con email normalizado")
     @WithAnonymousUser
-    void should_return_200_and_authdtoresponse_when_credentials_are_valid() throws Exception {
+    void should_return_201_and_authdtoresponse_when_credentials_are_valid() throws Exception {
         // Arrange
         final String email = "pajaritologin@example.com";
         final String password = "Str0ng!Pass";
@@ -260,7 +260,7 @@ class AuthTokenControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.email").value(email))
                 .andExpect(jsonPath("$.token").doesNotExist());

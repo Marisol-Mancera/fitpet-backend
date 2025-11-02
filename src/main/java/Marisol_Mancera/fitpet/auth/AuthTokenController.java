@@ -50,7 +50,7 @@ public class AuthTokenController {
         // Normalizamos el email recibido para búsquedas consistentes en BD
         String normalizedEmail = request.normalizedEmail();
 
-        // Delegamos en el servicio de dominio la autenticación y emisión del JWT
+        // Delegamos en el servicio de dominio la autenticaciÃ³n y emisiÃ³n del JWT
         String jwt = jwtTokenService.loginAndGenerateToken(normalizedEmail, request.password());
 
         // TTL coordinado con el servicio (15 minutos por defecto)

@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.endsWith;
 
 import Marisol_Mancera.fitpet.user.UserEntity;
 import Marisol_Mancera.fitpet.user.UserRepository;
@@ -88,7 +89,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(petJson))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/1")))
                                 .andExpect(jsonPath("$.id").isNumber())
                                 .andExpect(jsonPath("$.ownerId").value(owner.getId()))
                                 .andExpect(jsonPath("$.name").value("Pony"))
@@ -594,7 +595,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(petJson))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/4")))
                                 .andReturn();
 
                 String location = Objects.requireNonNull(
@@ -664,7 +665,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(petJson))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/17")))
                                 .andExpect(jsonPath("$.name").value("Pony"))
                                 .andExpect(jsonPath("$.species").value("Dog"))
                                 .andExpect(jsonPath("$.breed").value("Beagle"))
@@ -699,7 +700,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(petJson))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/16")))
                                 .andReturn();
 
                 String location = createResult.getResponse().getHeader("Location");
@@ -759,7 +760,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(original))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/5")))
                                 .andReturn();
 
                 String location = created.getResponse().getHeader("Location");

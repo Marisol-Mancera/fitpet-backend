@@ -1,7 +1,6 @@
 package Marisol_Mancera.fitpet.pet;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -33,8 +33,10 @@ public class PetController {
 
     @PostMapping
     public ResponseEntity<PetDTOResponse> create(@Valid @RequestBody PetCreateRequest request) {
+        // Delega creación al servicio (asigna owner autenticado)
         var saved = petService.createForCurrentOwner(request);
         var dto = PetMapper.toDTO(saved);
+        // Construye Location absoluta (evita hardcodear rutas)
         var location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(saved.getId())
@@ -48,21 +50,43 @@ public class PetController {
                 .getName();
     }
 
+    /**
+     * Lista mascotas del usuario autenticado.
+     * Soporta filtro opcional por especie (query param).
+     * 
+     * @param species (opcional) - filtra por especie (ej: "Dog", "Cat")
+     * @return lista de mascotas del dueño (filtradas si se especifica especie)
+     * 
+     * Ejemplos de uso:
+     * - GET /api/v1/pets → todas las mascotas del usuario
+     * - GET /api/v1/pets?species=Dog → solo perros del usuario
+     * 
+     */
     @GetMapping
-    public ResponseEntity<List<PetDTOResponse>> listMine() {
-        String username = currentUsername(); 
-
-        var result = petRepository.findByOwner_Username(username).stream()
+    public ResponseEntity<List<PetDTOResponse>> listMine(
+            @RequestParam(required = false) String species) {
+        String username = currentUsername();
+        
+        List<PetEntity> pets;
+        if (species != null && !species.isBlank()) {
+            // Filtro por especie (normalizado con trim para evitar errores por espacios)
+            pets = petRepository.findByOwner_UsernameAndSpecies(username, species.trim());
+        } else {
+            // Sin filtro, todas las mascotas del usuario
+            pets = petRepository.findByOwner_Username(username);
+        }
+        
+        var result = pets.stream()
                 .map(PetMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList();
 
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PetDTOResponse> getById(@PathVariable Long id) {
-        String username = currentUsername(); 
-
+        String username = currentUsername();
+        // Busca solo si pertenece al dueño (seguridad por ownership)
         var pet = petRepository.findByIdAndOwner_Username(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
 
@@ -71,8 +95,8 @@ public class PetController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-        String username = currentUsername(); 
-
+        String username = currentUsername();
+        // Verifica ownership antes de eliminar
         PetEntity pet = petRepository.findByIdAndOwner_Username(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
 
@@ -83,11 +107,12 @@ public class PetController {
     @PutMapping("/{id}")
     public ResponseEntity<PetDTOResponse> updateById(@PathVariable Long id,
             @RequestBody @Valid PetCreateRequest request) {
-        String username = currentUsername(); 
-
+        String username = currentUsername();
+        // Verifica ownership antes de actualizar
         PetEntity pet = petRepository.findByIdAndOwner_Username(id, username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
 
+        // Actualiza campos (normaliza trim en strings)
         pet.setName(request.name().trim());
         pet.setSpecies(request.species().trim());
         pet.setBreed(request.breed().trim());

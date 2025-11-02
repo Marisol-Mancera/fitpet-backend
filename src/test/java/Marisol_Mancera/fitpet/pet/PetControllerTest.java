@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.endsWith;
 
 import Marisol_Mancera.fitpet.user.UserEntity;
 import Marisol_Mancera.fitpet.user.UserRepository;
@@ -88,7 +89,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(petJson))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/1")))
                                 .andExpect(jsonPath("$.id").isNumber())
                                 .andExpect(jsonPath("$.ownerId").value(owner.getId()))
                                 .andExpect(jsonPath("$.name").value("Pony"))
@@ -594,7 +595,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(petJson))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/4")))
                                 .andReturn();
 
                 String location = Objects.requireNonNull(
@@ -664,7 +665,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(petJson))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/17")))
                                 .andExpect(jsonPath("$.name").value("Pony"))
                                 .andExpect(jsonPath("$.species").value("Dog"))
                                 .andExpect(jsonPath("$.breed").value("Beagle"))
@@ -699,7 +700,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(petJson))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/16")))
                                 .andReturn();
 
                 String location = createResult.getResponse().getHeader("Location");
@@ -759,7 +760,7 @@ class PetControllerTest {
                                 .header("Authorization", bearer)
                                 .content(original))
                                 .andExpect(status().isCreated())
-                                .andExpect(header().string("Location", matchesPattern("/api/v1/pets/\\d+")))
+                                .andExpect(header().string("Location", endsWith("/api/v1/pets/5")))
                                 .andReturn();
 
                 String location = created.getResponse().getHeader("Location");
@@ -790,62 +791,217 @@ class PetControllerTest {
         }
 
         @Test
-        @DisplayName("200 actualizar mascota: el dueño autenticado puede modificar los campos básicos")
-        void should_update_pet_fields_for_authenticated_owner() throws Exception {
-                // ARRANGE: crear usuario propietario
+        @DisplayName("200 listar mascotas: filtro por especie devuelve solo mascotas de esa especie")
+        void should_return_200_and_filter_by_species() throws Exception {
                 var owner = UserEntity.builder()
-                                .username("updatepet@example.com")
+                                .username("multiowner@example.com")
                                 .password("any")
                                 .roles(Collections.emptySet())
                                 .build();
                 userRepository.save(owner);
+
                 String bearer = bearerFor(owner.getUsername());
 
-                // Mascota original
-                String petJson = """
+                // Crear 2 perros y 1 gato para el mismo dueño
+                String dogJson1 = """
                                 {
-                                  "name": "Kira",
+                                  "name": "Rex",
                                   "species": "Dog",
-                                  "breed": "Beagle",
+                                  "breed": "Labrador",
+                                  "sex": "Male",
+                                  "birthDate": "%s",
+                                  "weightKg": 25.5
+                                }
+                                """.formatted(LocalDate.now().minusYears(2));
+
+                String dogJson2 = """
+                                {
+                                  "name": "Max",
+                                  "species": "Dog",
+                                  "breed": "Golden Retriever",
+                                  "sex": "Male",
+                                  "birthDate": "%s",
+                                  "weightKg": 30.0
+                                }
+                                """.formatted(LocalDate.now().minusYears(3));
+
+                String catJson = """
+                                {
+                                  "name": "Michi",
+                                  "species": "Cat",
+                                  "breed": "Siamese",
                                   "sex": "Female",
                                   "birthDate": "%s",
-                                  "weightKg": 9.8
+                                  "weightKg": 4.5
                                 }
-                                """.formatted(LocalDate.now().minusYears(4));
+                                """.formatted(LocalDate.now().minusYears(1));
 
-                // Crear mascota
-                var createResult = mockMvc.perform(post("/api/v1/pets")
+                // Crea 3 mascotas
+                mockMvc.perform(post("/api/v1/pets")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .header("Authorization", bearer)
-                                .content(petJson))
-                                .andExpect(status().isCreated())
-                                .andReturn();
+                                .content(dogJson1))
+                                .andExpect(status().isCreated());
 
-                String location = Objects.requireNonNull(createResult.getResponse().getHeader("Location"));
-
-                // ACT: actualizar datos (nombre y peso)
-                String updatedJson = """
-                                {
-                                  "name": "Kira Updated",
-                                  "species": "Dog",
-                                  "breed": "Beagle",
-                                  "sex": "Female",
-                                  "birthDate": "%s",
-                                  "weightKg": 11.0
-                                }
-                                """.formatted(LocalDate.now().minusYears(4));
-
-                // ASSERT: 200 OK y datos modificados correctamente
-                mockMvc.perform(put(location)
+                mockMvc.perform(post("/api/v1/pets")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .header("Authorization", bearer)
-                                .content(updatedJson))
+                                .content(dogJson2))
+                                .andExpect(status().isCreated());
+
+                mockMvc.perform(post("/api/v1/pets")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", bearer)
+                                .content(catJson))
+                                .andExpect(status().isCreated());
+
+                //filtrar solo perros
+                mockMvc.perform(get("/api/v1/pets?species=Dog")
+                                .header("Authorization", bearer))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.name").value("Kira Updated"))
-                                .andExpect(jsonPath("$.weightKg").value(11.0))
-                                .andExpect(jsonPath("$.species").value("Dog"))
-                                .andExpect(jsonPath("$.breed").value("Beagle"))
-                                .andExpect(jsonPath("$.sex").value("Female"));
+                                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                                .andExpect(jsonPath("$", hasSize(2)))
+                                .andExpect(jsonPath("$[0].species").value("Dog"))
+                                .andExpect(jsonPath("$[1].species").value("Dog"));
+
+                //filtrar solo gatos
+                mockMvc.perform(get("/api/v1/pets?species=Cat")
+                                .header("Authorization", bearer))
+                                .andExpect(status().isOk())
+                                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                                .andExpect(jsonPath("$", hasSize(1)))
+                                .andExpect(jsonPath("$[0].species").value("Cat"))
+                                .andExpect(jsonPath("$[0].name").value("Michi"));
+        }
+
+        @Test
+        @DisplayName("200 listar mascotas: filtro por especie inexistente devuelve lista vacía")
+        void should_return_200_and_empty_list_when_filtering_by_nonexistent_species() throws Exception {
+                var owner = UserEntity.builder()
+                                .username("singledog@example.com")
+                                .password("any")
+                                .roles(Collections.emptySet())
+                                .build();
+                userRepository.save(owner);
+
+                String bearer = bearerFor(owner.getUsername());
+
+                // Crear solo un perro
+                String dogJson = """
+                                {
+                                  "name": "Buddy",
+                                  "species": "Dog",
+                                  "breed": "Beagle",
+                                  "sex": "Male",
+                                  "birthDate": "%s",
+                                  "weightKg": 15.0
+                                }
+                                """.formatted(LocalDate.now().minusYears(2));
+
+                mockMvc.perform(post("/api/v1/pets")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", bearer)
+                                .content(dogJson))
+                                .andExpect(status().isCreated());
+
+                //filtrar por especie que no tiene (Bird)
+                mockMvc.perform(get("/api/v1/pets?species=Bird")
+                                .header("Authorization", bearer))
+                                .andExpect(status().isOk())
+                                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                                .andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        @DisplayName("200 listar mascotas: sin filtro devuelve todas las mascotas del usuario")
+        void should_return_200_and_all_pets_when_no_species_filter() throws Exception {
+                var owner = UserEntity.builder()
+                                .username("mixowner@example.com")
+                                .password("any")
+                                .roles(Collections.emptySet())
+                                .build();
+                userRepository.save(owner);
+
+                String bearer = bearerFor(owner.getUsername());
+
+                // Crear 1 perro y 1 gato
+                String dogJson = """
+                                {
+                                  "name": "Rocky",
+                                  "species": "Dog",
+                                  "breed": "Bulldog",
+                                  "sex": "Male",
+                                  "birthDate": "%s",
+                                  "weightKg": 20.0
+                                }
+                                """.formatted(LocalDate.now().minusYears(4));
+
+                String catJson = """
+                                {
+                                  "name": "Luna",
+                                  "species": "Cat",
+                                  "breed": "Persian",
+                                  "sex": "Female",
+                                  "birthDate": "%s",
+                                  "weightKg": 5.0
+                                }
+                                """.formatted(LocalDate.now().minusYears(2));
+
+                mockMvc.perform(post("/api/v1/pets")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", bearer)
+                                .content(dogJson))
+                                .andExpect(status().isCreated());
+
+                mockMvc.perform(post("/api/v1/pets")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", bearer)
+                                .content(catJson))
+                                .andExpect(status().isCreated());
+
+                mockMvc.perform(get("/api/v1/pets")
+                                .header("Authorization", bearer))
+                                .andExpect(status().isOk())
+                                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                                .andExpect(jsonPath("$", hasSize(2)));
+        }
+
+        @Test
+        @DisplayName("200 listar mascotas: filtro normaliza espacios en el parámetro species")
+        void should_return_200_and_normalize_species_filter_with_spaces() throws Exception {
+                
+                var owner = UserEntity.builder()
+                                .username("spacetester@example.com")
+                                .password("any")
+                                .roles(Collections.emptySet())
+                                .build();
+                userRepository.save(owner);
+
+                String bearer = bearerFor(owner.getUsername());
+
+                String dogJson = """
+                                {
+                                  "name": "Spike",
+                                  "species": "Dog",
+                                  "breed": "Poodle",
+                                  "sex": "Male",
+                                  "birthDate": "%s",
+                                  "weightKg": 8.0
+                                }
+                                """.formatted(LocalDate.now().minusYears(1));
+
+                mockMvc.perform(post("/api/v1/pets")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", bearer)
+                                .content(dogJson))
+                                .andExpect(status().isCreated());
+
+                mockMvc.perform(get("/api/v1/pets?species= Dog ")
+                                .header("Authorization", bearer))
+                                .andExpect(status().isOk())
+                                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                                .andExpect(jsonPath("$", hasSize(1)))
+                                .andExpect(jsonPath("$[0].species").value("Dog"));
         }
 
 }

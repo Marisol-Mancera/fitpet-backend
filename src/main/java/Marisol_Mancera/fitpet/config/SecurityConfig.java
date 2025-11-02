@@ -27,14 +27,16 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource)
+            throws Exception {
         http
-                // CORS habilitado (añadido en HU3 para permitir conexión con frontend)
+                // CORS habilitado
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 // API stateless
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -43,24 +45,22 @@ public class SecurityConfig {
                 // H2 console + swagger públicos
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
-                // Consola H2 y documentación Swagger públicas (solo dev/test)
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // Auth públicas (registro, login, token)
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/registro").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/token").permitAll()
-                .requestMatchers("/api/v1/auth/login").permitAll()
-                // Cuando se emitan tokens con scopes, se puede afinar por scope:
-                // .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAuthority("SCOPE_USER")
-                // .requestMatchers("/api/v1/admin/**").hasAuthority("SCOPE_ADMIN")
-                
-                // Resto de endpoints requieren autenticación
-                .anyRequest().authenticated()
-                )
+                        // Consola H2 y documentación Swagger públicas (solo dev/test)
+                        .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Auth públicas (registro, login, token)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/registro").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/token").permitAll()
+                        .requestMatchers("/api/v1/auth/login").permitAll()
+                        // Cuando se emitan tokens con scopes, se puede afinar por scope:
+                        // .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAuthority("SCOPE_USER")
+                        // .requestMatchers("/api/v1/admin/**").hasAuthority("SCOPE_ADMIN")
+
+                        // Resto de endpoints requieren autenticación
+                        .anyRequest().authenticated())
                 // Resource Server JWT (validación de tokens HS512)
                 .oauth2ResourceServer(oauth -> oauth
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
-                );
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
         return http.build();
     }

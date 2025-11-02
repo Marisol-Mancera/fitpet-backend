@@ -38,7 +38,6 @@ public class AuthTokenController {
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
 
-
     /**
      * Emite un JWT si las credenciales son válidas. - Normaliza el email (trim
      * + lowercase) para evitar fallos de coincidencia. - Responde 201 con {
@@ -85,9 +84,10 @@ public class AuthTokenController {
     }
 
     @PostMapping("/login")
-public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
-    // CHANGE: delegar autenticación al servicio para cumplir SRP y permitir 401 centralizado
-    AuthDTOResponse response = authService.authenticate(request); // delega en AuthService
-    return ResponseEntity.ok(response);                         
-}
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
+        // CHANGE: delegar autenticación al servicio para cumplir SRP y permitir 401
+        // centralizado
+        AuthDTOResponse response = authService.authenticate(request); // delega en AuthService
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
 }

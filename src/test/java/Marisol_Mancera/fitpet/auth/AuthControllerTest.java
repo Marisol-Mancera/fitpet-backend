@@ -1,0 +1,131 @@
+package Marisol_Mancera.fitpet.auth;
+
+import java.util.Map;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@SpringBootTest
+@TestPropertySource(properties = "api-endpoint=/api/v1")
+class AuthControllerTest {
+
+    @Autowired
+    WebApplicationContext context;
+    @Autowired
+    ObjectMapper mapper;
+
+    MockMvc mockMvc;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(SecurityMockMvcConfigurers.springSecurity())
+                .build();
+    }
+
+    @Test
+    @DisplayName("Debe devolver 201 al registrar usuario en /api/v1/auth/registro")
+    @WithMockUser
+    void should_return_201_when_registering_user_under_property_mapped_base_path() throws Exception {
+        var payload = Map.of("email", "pajaritopio@example.com", "password", "Str0ng!Pass");
+
+        mockMvc.perform(
+                post("/api/v1/auth/registro")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(payload)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("Debe devolver 400 cuando el email es inválido en /api/v1/auth/registro")
+    @WithMockUser
+    void should_return_400_when_email_is_invalid_on_register_endpoint() throws Exception {
+        var payload = Map.of("email", "invalid-email", "password", "Str0ng!Pass");
+
+        mockMvc.perform(
+                MockMvcRequestBuilders.post("/api/v1/auth/registro")
+                        .with(SecurityMockMvcRequestPostProcessors
+                                .csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(payload)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Debe devolver 400 cuando la contraseña no contiene símbolo")
+    @WithMockUser
+    void should_return_400_when_password_has_no_symbol() throws Exception {
+        var payload = Map.of("email", "pajaritopio@example.com", "password", "Strong0Pass"); // sin símbolo
+
+        mockMvc.perform(
+                post("/api/v1/auth/registro")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(payload)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Debe devolver 201 y un cuerpo RegisterResponse con id, email y createdAt")
+    @WithMockUser
+    void should_return_201_and_register_response_body() throws Exception {
+        var payload = Map.of("email", "pajaritopio2@example.com", "password", "Str0ng!Pass");
+
+        mockMvc.perform(
+                post("/api/v1/auth/registro")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(payload))
+        )
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", notNullValue()))
+        .andExpect(jsonPath("$.email", is("pajaritopio2@example.com")))
+        .andExpect(jsonPath("$.createdAt", notNullValue()));
+    }
+
+    @Test
+    @DisplayName("Debe devolver 409 cuando el email ya está registrado")
+    @WithMockUser
+    void should_return_409_when_email_is_already_registered() throws Exception {
+        var payload = Map.of("email", "pajaritopio1@example.com", "password", "Str0ng!Pass");
+
+        // Primer registro (201)
+        mockMvc.perform(
+                post("/api/v1/auth/registro")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(payload))
+        ).andExpect(status().isCreated());
+
+        // Segundo registro con el mismo email (409)
+        mockMvc.perform(
+                post("/api/v1/auth/registro")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(payload))
+        ).andExpect(status().isConflict());
+    }
+
+}

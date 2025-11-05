@@ -34,3 +34,6 @@ build/
 
 
 .env
+compose.yaml
+application-mysql.properties
+application-h2.properties
